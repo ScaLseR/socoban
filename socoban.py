@@ -1,11 +1,17 @@
 from msvcrt import getch
 
+BOX = 'B'
+EMPTY = '.'
+PLAY = '@'
+BOX_PLACE = 'X'
+
 class Game_map():
     def __init__(self, n):
         self.g_map = []
         self.n = n
         self.player = []
         self.pl_box = []
+        self.box = []
         #получаем карту из выбранного файла
         with open(f'./{n}.txt', 'r') as file:
             for line in file:
@@ -24,31 +30,56 @@ class Game_map():
     def find_coord(self):
         for i in range(len(self.g_map)):
             for j in range(len(self.g_map)):
-                if self.g_map[i][j] == '@':
+                if self.g_map[i][j] == PLAY:
                     self.player.append(i)
                     self.player.append(j)
-                if self.g_map[i][j] == 'X':
+                if self.g_map[i][j] == BOX_PLACE:
                     self.pl_box.append([i, j])
 
+    def is_win(self):
+        self.box = []
+        for i in range(len(self.g_map)):
+            for j in range(len(self.g_map)):
+                if self.g_map[i][j] == BOX:
+                    self.box.append([i, j])
+        if self.box == self.pl_box:
+            print('Вы победили!!!')
+            exit()
 
-    #перемещение грузчика @ стрелками
+    #перемещение персонажа - @ стрелками
     def move(self, x, y):
         x_old = self.player[0]
         y_old = self.player[1]
-        if self.g_map[x_old + x][y_old + y] == '.':
-            self.g_map[x_old + x][y_old + y] = '@'
-            self.g_map[x_old][y_old] = '.'
+        #если перед персонажем пустое поле
+        if self.g_map[x_old + x][y_old + y] == EMPTY:
+            self.g_map[x_old + x][y_old + y] = PLAY
+            if [x_old, y_old] in self.pl_box:
+                self.g_map[x_old][y_old] = BOX_PLACE
+            else:
+                self.g_map[x_old][y_old] = EMPTY
+            self.player[0] = x_old + x
+            self.player[1] = y_old + y
+        # если перед персонажем поле X для ящика
+        if self.g_map[x_old + x][y_old + y] == BOX_PLACE:
+            self.g_map[x_old + x][y_old + y] = PLAY
+            self.g_map[x_old][y_old] = EMPTY
+            self.player[0] = x_old + x
+            self.player[1] = y_old + y
+        #если перед персонажем ящик
+        if self.g_map[x_old + x][y_old + y] == BOX and (self.g_map[x_old + x + x][y_old + y + y] == EMPTY or self.g_map[x_old + x + x][y_old + y + y] == BOX_PLACE):
+            self.g_map[x_old + x][y_old + y] = PLAY
+            self.g_map[x_old + x + x][y_old + y + y] = BOX
+            self.g_map[x_old][y_old] = EMPTY
             self.player[0] = x_old + x
             self.player[1] = y_old + y
         self.viev_board()
-
-class Player():
-    pass
+        self.is_win()
 
 class Game():
 
     #настройки игры
     def config(self):
+        print('Добро пожаловать в игру Socoban! Цель установить ящики - *, на специальные места - Х. \n Управление происходит стрелками на клавиатуре. (Выход из игры клавиша - ESC)')
         n = self.valid_input_dig('Выберите уровень игры: число от 1 до 5 - ')
         g_map = Game_map(n)
         g_map.viev_board()
@@ -77,8 +108,6 @@ class Game():
                 g_map.move(0, 1)
             if key == 27:#ESC
                 break
-
-
 
 if __name__ == "__main__":
     game = Game()
