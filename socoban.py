@@ -84,8 +84,23 @@ class Game_map():
         self.viev_board()
         self.is_win()
 
-class Game():
+class Player:
+    def hod(self, g_map):
+        while True:
+            key = ord(getch())
+            if key == 80:  # стрелка вниз
+                g_map.move(1, 0)
+            if key == 72:  # стрелка вверх
+                g_map.move(-1, 0)
+            if key == 75:  # стрелка влево
+                g_map.move(0, -1)
+            if key == 77:  # стрелка вправо
+                g_map.move(0, 1)
+            if key == 27:  # ESC
+                break
 
+
+class Game:
     #настройки игры
     def config(self):
         print('Добро пожаловать в игру Socoban! Цель установить ящики - *, на специальные места - Х. \n Управление происходит стрелками на клавиатуре. (Выход из игры клавиша - ESC)')
@@ -93,7 +108,8 @@ class Game():
         g_map = Game_map(n)
         g_map.viev_board()
         g_map.find_coord()
-        game.start(g_map)
+        pl = Player()
+        pl.hod(g_map)
 
     #отработка корректного ввода в консоль числа(номер уровня)
     def valid_input_dig(self, text):
@@ -103,20 +119,6 @@ class Game():
                 return int(level)
             else:
                 print('Введите номер уровня от 1 до 5!')
-
-    def start(self, g_map):
-        while True:
-            key = ord(getch())
-            if key == 80:#стрелка вниз
-                g_map.move(1, 0)
-            if key == 72:#стрелка вверх
-                g_map.move(-1, 0)
-            if key == 75:#стрелка влево
-                g_map.move(0, -1)
-            if key == 77:#стрелка вправо
-                g_map.move(0, 1)
-            if key == 27:#ESC
-                break
 
 if __name__ == "__main__":
     game = Game()
