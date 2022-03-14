@@ -43,7 +43,10 @@ class Game_map():
                 if self.g_map[i][j] == BOX:
                     self.box.append([i, j])
         if self.box == self.pl_box:
-            print('Вы победили!!!')
+            print()
+            print('******************')
+            print('* Вы победили!!! *')
+            print('******************')
             exit()
 
     #перемещение персонажа - @ стрелками
@@ -62,14 +65,20 @@ class Game_map():
         # если перед персонажем поле X для ящика
         if self.g_map[x_old + x][y_old + y] == BOX_PLACE:
             self.g_map[x_old + x][y_old + y] = PLAY
-            self.g_map[x_old][y_old] = EMPTY
+            if [x_old, y_old] in self.pl_box:
+                self.g_map[x_old][y_old] = BOX_PLACE
+            else:
+                self.g_map[x_old][y_old] = EMPTY
             self.player[0] = x_old + x
             self.player[1] = y_old + y
         #если перед персонажем ящик
         if self.g_map[x_old + x][y_old + y] == BOX and (self.g_map[x_old + x + x][y_old + y + y] == EMPTY or self.g_map[x_old + x + x][y_old + y + y] == BOX_PLACE):
             self.g_map[x_old + x][y_old + y] = PLAY
             self.g_map[x_old + x + x][y_old + y + y] = BOX
-            self.g_map[x_old][y_old] = EMPTY
+            if [x_old, y_old] in self.pl_box:
+                self.g_map[x_old][y_old] = BOX_PLACE
+            else:
+                self.g_map[x_old][y_old] = EMPTY
             self.player[0] = x_old + x
             self.player[1] = y_old + y
         self.viev_board()
