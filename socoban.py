@@ -1,4 +1,5 @@
 from msvcrt import getch
+import time
 
 BOX = 'B'
 EMPTY = '.'
@@ -47,8 +48,7 @@ class Game_map():
             print('******************')
             print('* Вы победили!!! *')
             print('******************')
-            exit()
-        #print('self.box =', self.box)
+            game.replay()
 
     #перемещение персонажа - @ стрелками
     def move(self, x, y):
@@ -86,30 +86,76 @@ class Game_map():
         self.is_win()
 
 class Player:
+
     def hod(self, g_map):
         while True:
             key = ord(getch())
             if key == 80:  # стрелка вниз
+                game.save_hod(80)
                 g_map.move(1, 0)
             if key == 72:  # стрелка вверх
+                game.save_hod(72)
                 g_map.move(-1, 0)
             if key == 75:  # стрелка влево
+                game.save_hod(75)
                 g_map.move(0, -1)
             if key == 77:  # стрелка вправо
+                game.save_hod(77)
                 g_map.move(0, 1)
             if key == 27:  # ESC
                 break
 
+class Replay_Player:
+
+    def hod(self, g_map, key_ids):
+        for key in key_ids:
+            time.sleep(1)
+            if int(key) == 80:  # стрелка вниз
+                g_map.move(1, 0)
+            if int(key) == 72:  # стрелка вверх
+                g_map.move(-1, 0)
+            if int(key) == 75:  # стрелка влево
+                g_map.move(0, -1)
+            if int(key) == 77:  # стрелка вправо
+                g_map.move(0, 1)
+
 class Game:
+    key_ids = []
+    n = 0
+    # запись ходов в список
+    def save_hod(self, key_id):
+        self.key_ids.append(key_id)
+
+    #replay уровня
+    def replay(self):
+        otv = self.valid_input_let('Хотите посмотреть replay? Введите ', 'y', 'n')
+        if otv == 'n':
+            exit()
+        else:
+            g_map = Game_map(self.n)
+            g_map.viev_board()
+            g_map.find_coord()
+            pl = Replay_Player()
+            pl.hod(g_map, self.key_ids)
+
     #настройки игры
     def config(self):
         print('Добро пожаловать в игру Socoban! Цель установить ящики - B, на специальные места - Х. \n Управление происходит стрелками на клавиатуре. (Выход из игры клавиша - ESC)')
-        n = self.valid_input_dig('Выберите уровень игры: число от 1 до 5 - ')
-        g_map = Game_map(n)
+        self.n = self.valid_input_dig('Выберите уровень игры: число от 1 до 5 - ')
+        g_map = Game_map(self.n)
         g_map.viev_board()
         g_map.find_coord()
         pl = Player()
         pl.hod(g_map)
+
+    # обработка ввода правильных буквенных ответов на диалоги
+    def valid_input_let(self, text, zn1, zn2):
+        while True:
+            vvod = input(text + '"' + zn1 + '" или "' + zn2 + '": ')
+            if vvod.isalpha() and (vvod == zn1 or vvod == zn2):
+                return vvod
+            else:
+                print('Введите ' + '"' + zn1 + '" или "' + zn2 + '"!')
 
     #отработка корректного ввода в консоль числа(номер уровня)
     def valid_input_dig(self, text):
