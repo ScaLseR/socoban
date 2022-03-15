@@ -48,7 +48,7 @@ class Game_map():
             print('* Вы победили!!! *')
             print('******************')
             exit()
-        print('self.box =', self.box)
+        #print('self.box =', self.box)
 
     #перемещение персонажа - @ стрелками
     def move(self, x, y):
@@ -99,7 +99,6 @@ class Player:
                 g_map.move(0, 1)
             if key == 27:  # ESC
                 break
-
 
 class Game:
     #настройки игры
