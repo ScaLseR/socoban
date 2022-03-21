@@ -6,7 +6,8 @@ EMPTY = '.'
 PLAY = '@'
 BOX_PLACE = 'X'
 
-class Game_map():
+
+class GameMap:
     def __init__(self, n):
         self.g_map = []
         self.n = n
@@ -20,7 +21,7 @@ class Game_map():
                 self.g_map.append(s_line[:-1])
 
     #отображение игровой карты в консоли
-    def viev_board(self):
+    def view_board(self):
         print()
         for i in range(len(self.g_map)):
             for j in range(len(self.g_map)):
@@ -44,8 +45,7 @@ class Game_map():
                 if self.g_map[i][j] == BOX:
                     self.box.append([i, j])
         if self.box == self.pl_box:
-            print()
-            print('******************')
+            print('\n******************')
             print('* Вы победили!!! *')
             print('******************')
             game.replay()
@@ -54,8 +54,8 @@ class Game_map():
     def move(self, x, y):
         x_old = self.player[0]
         y_old = self.player[1]
-        #если перед персонажем пустое поле
-        if self.g_map[x_old + x][y_old + y] == EMPTY:
+        #если перед персонажем пустое поле или поле X для ящика
+        if self.g_map[x_old + x][y_old + y] == EMPTY or self.g_map[x_old + x][y_old + y] == BOX_PLACE:
             self.g_map[x_old + x][y_old + y] = PLAY
             if [x_old, y_old] in self.pl_box:
                 self.g_map[x_old][y_old] = BOX_PLACE
@@ -63,17 +63,8 @@ class Game_map():
                 self.g_map[x_old][y_old] = EMPTY
             self.player[0] = x_old + x
             self.player[1] = y_old + y
-        # если перед персонажем поле X для ящика
-        if self.g_map[x_old + x][y_old + y] == BOX_PLACE:
-            self.g_map[x_old + x][y_old + y] = PLAY
-            if [x_old, y_old] in self.pl_box:
-                self.g_map[x_old][y_old] = BOX_PLACE
-            else:
-                self.g_map[x_old][y_old] = EMPTY
-            self.player[0] = x_old + x
-            self.player[1] = y_old + y
-        #если перед персонажем ящик
-        if self.g_map[x_old + x][y_old + y] == BOX and (self.g_map[x_old + x + x][y_old + y + y] == EMPTY or self.g_map[x_old + x + x][y_old + y + y] == BOX_PLACE):
+        if self.g_map[x_old + x][y_old + y] == BOX and (self.g_map[x_old + x + x][y_old + y + y] == EMPTY
+                                                        or self.g_map[x_old + x + x][y_old + y + y] == BOX_PLACE):
             self.g_map[x_old + x][y_old + y] = PLAY
             self.g_map[x_old + x + x][y_old + y + y] = BOX
             if [x_old, y_old] in self.pl_box:
@@ -82,8 +73,9 @@ class Game_map():
                 self.g_map[x_old][y_old] = EMPTY
             self.player[0] = x_old + x
             self.player[1] = y_old + y
-        self.viev_board()
+        self.view_board()
         self.is_win()
+
 
 class Player:
 
@@ -105,7 +97,8 @@ class Player:
             if key == 27:  # ESC
                 break
 
-class Replay_Player:
+
+class AIPlayer:
 
     def hod(self, g_map, key_ids):
         for key in key_ids:
@@ -119,34 +112,48 @@ class Replay_Player:
             if int(key) == 77:  # стрелка вправо
                 g_map.move(0, 1)
 
+
 class Game:
     key_ids = []
     n = 0
-    # запись ходов в список
+    # запись ходов в список для повтора
+
     def save_hod(self, key_id):
         self.key_ids.append(key_id)
 
+    #получаем карту, и запускаем AI проходить уровень по нашим записанным координатам
+    def ai_play(self):
+        g_map = GameMap(self.n)
+        g_map.view_board()
+        g_map.find_coord()
+        pl = AIPlayer()
+        pl.hod(g_map, self.key_ids)
+
     #replay уровня
     def replay(self):
-        otv = self.valid_input_let('Хотите посмотреть replay? Введите ', 'y', 'n')
+        otv = self.valid_input_let('Хотите посмотреть replay? Введите "y" если да и "n" для выхода из игры. '
+                                   'Введите ', 'y', 'n')
         if otv == 'n':
             exit()
         else:
-            g_map = Game_map(self.n)
-            g_map.viev_board()
-            g_map.find_coord()
-            pl = Replay_Player()
-            pl.hod(g_map, self.key_ids)
+            self.ai_play()
 
     #настройки игры
     def config(self):
-        print('Добро пожаловать в игру Socoban! Цель установить ящики - B, на специальные места - Х. \n Управление происходит стрелками на клавиатуре. (Выход из игры клавиша - ESC)')
+        print('Добро пожаловать в игру Socoban! Цель установить ящики - B, на специальные места - Х. '
+              '\n Управление происходит стрелками на клавиатуре. (Выход из игры клавиша - ESC)')
         self.n = self.valid_input_dig('Выберите уровень игры: число от 1 до 5 - ')
-        g_map = Game_map(self.n)
-        g_map.viev_board()
+        otv = self.valid_input_let('Хотите играть сами - выберите "y", пусть играет ИИ - выберите "n". '
+                                   'Введите ', 'y', 'n')
+        g_map = GameMap(self.n)
+        g_map.view_board()
         g_map.find_coord()
-        pl = Player()
-        pl.hod(g_map)
+        if otv == 'y':
+            pl = Player()
+            pl.hod(g_map)
+        else:
+            pl = AIPlayer()
+            pl.hod(g_map, self.key_ids)
 
     # обработка ввода правильных буквенных ответов на диалоги
     def valid_input_let(self, text, zn1, zn2):
