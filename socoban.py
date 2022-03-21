@@ -45,10 +45,7 @@ class GameMap:
                 if self.g_map[i][j] == BOX:
                     self.box.append([i, j])
         if self.box == self.pl_box:
-            print('\n******************')
-            print('* Вы победили!!! *')
-            print('******************')
-            game.replay()
+            return True
 
     #перемещение персонажа - @ стрелками
     def move(self, x, y):
@@ -74,28 +71,41 @@ class GameMap:
             self.player[0] = x_old + x
             self.player[1] = y_old + y
         self.view_board()
-        self.is_win()
+        if self.is_win():
+            return True
+
+    #поиск пути для решения сокобана
+    def find_solution(self, g_map):
+        rez = []
+        arrows = [72, 80, 75, 77]
+        for arrow in arrows:
+
+
+        return rez
 
 
 class Player:
 
     def hod(self, g_map):
+        rez = None
         while True:
             key = ord(getch())
             if key == 80:  # стрелка вниз
                 game.save_hod(80)
-                g_map.move(1, 0)
+                rez = g_map.move(1, 0)
             if key == 72:  # стрелка вверх
                 game.save_hod(72)
-                g_map.move(-1, 0)
+                rez = g_map.move(-1, 0)
             if key == 75:  # стрелка влево
                 game.save_hod(75)
-                g_map.move(0, -1)
+                rez = g_map.move(0, -1)
             if key == 77:  # стрелка вправо
                 game.save_hod(77)
-                g_map.move(0, 1)
+                rez = g_map.move(0, 1)
             if key == 27:  # ESC
                 break
+            if rez:
+                return True
 
 
 class AIPlayer:
@@ -122,7 +132,7 @@ class Game:
         self.key_ids.append(key_id)
 
     #получаем карту, и запускаем AI проходить уровень по нашим записанным координатам
-    def ai_play(self):
+    def ai_replay(self):
         g_map = GameMap(self.n)
         g_map.view_board()
         g_map.find_coord()
@@ -136,7 +146,7 @@ class Game:
         if otv == 'n':
             exit()
         else:
-            self.ai_play()
+            self.ai_replay()
 
     #настройки игры
     def config(self):
@@ -150,9 +160,12 @@ class Game:
         g_map.find_coord()
         if otv == 'y':
             pl = Player()
-            pl.hod(g_map)
+            if pl.hod(g_map):
+                print('Вы победили!')
+                game.replay()
         else:
             pl = AIPlayer()
+            self.key_ids = g_map.find_solution()
             pl.hod(g_map, self.key_ids)
 
     # обработка ввода правильных буквенных ответов на диалоги
