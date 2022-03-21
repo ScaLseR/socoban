@@ -79,7 +79,7 @@ class GameMap:
         rez = []
         arrows = [72, 80, 75, 77]
         for arrow in arrows:
-
+            pass
 
         return rez
 
