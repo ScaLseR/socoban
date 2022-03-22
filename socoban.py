@@ -1,4 +1,5 @@
 from msvcrt import getch
+from copy import deepcopy
 import time
 
 BOX = 'B'
@@ -53,42 +54,81 @@ class GameMap:
             return True
 
     #перемещение персонажа - @ стрелками
-    def move(self, x: int, y: int) -> bool:
+    def move(self, x: int, y: int, view: bool, *g_map: list) -> bool:
+        if len(g_map) == 0:
+            g_map = self.g_map
         x_old = self.player[0]
         y_old = self.player[1]
         #если перед персонажем пустое поле или поле X для ящика
-        if self.g_map[x_old + x][y_old + y] == EMPTY or self.g_map[x_old + x][y_old + y] == BOX_PLACE:
-            self.g_map[x_old + x][y_old + y] = PLAY
+        if g_map[x_old + x][y_old + y] == EMPTY or g_map[x_old + x][y_old + y] == BOX_PLACE:
+            g_map[x_old + x][y_old + y] = PLAY
             if [x_old, y_old] in self.pl_box:
-                self.g_map[x_old][y_old] = BOX_PLACE
+                g_map[x_old][y_old] = BOX_PLACE
             else:
-                self.g_map[x_old][y_old] = EMPTY
+                g_map[x_old][y_old] = EMPTY
             self.player[0] = x_old + x
             self.player[1] = y_old + y
         #если перед персонажем ящик
-        if self.g_map[x_old + x][y_old + y] == BOX and (self.g_map[x_old + x + x][y_old + y + y] == EMPTY
-                                                        or self.g_map[x_old + x + x][y_old + y + y] == BOX_PLACE):
-            self.g_map[x_old + x][y_old + y] = PLAY
-            self.g_map[x_old + x + x][y_old + y + y] = BOX
+        if g_map[x_old + x][y_old + y] == BOX and (g_map[x_old + x + x][y_old + y + y] == EMPTY
+                                                        or g_map[x_old + x + x][y_old + y + y] == BOX_PLACE):
+            g_map[x_old + x][y_old + y] = PLAY
+            g_map[x_old + x + x][y_old + y + y] = BOX
             if [x_old, y_old] in self.pl_box:
-                self.g_map[x_old][y_old] = BOX_PLACE
+                g_map[x_old][y_old] = BOX_PLACE
             else:
-                self.g_map[x_old][y_old] = EMPTY
+                g_map[x_old][y_old] = EMPTY
             self.player[0] = x_old + x
             self.player[1] = y_old + y
-        self.view_board()
-        if self.is_win(self.g_map):
+        if view:
+            self.view_board()
+        if self.is_win(g_map):
             return True
+
+    #получение копии игровой карты
+    def map_copy(self, g_map: list) -> list:
+        c_map = deepcopy(g_map)
+        return c_map
+
+    #преобразуем ключ кнопки управления(стрелок) в пкоординаты
+    def convert_coord(self, key: int) -> tuple:
+        if key == 72:
+            x = - 1
+            y = 0
+        elif key == 80:
+            x = 1
+            y = 0
+        elif key == 75:
+            x = 0
+            y = - 1
+        elif key == 77:
+            x = 0
+            y = 1
+        return x, y
+
+    #определение возможности хода в 4 направлениях
+    def posible_moves(self, c_map, x: int, y: int) -> list:
+        moves = []
+        arrows = [72, 80, 75, 77]
+        x_old = x
+        y_old = y
+        for arrow in arrows:
+            x_new, y_new = self.convert_coord(arrow)
+            if c_map[x_old + x_new][y_old + y_new] == EMPTY or (c_map[x_old + x_new][y_old + x_new] == BOX_PLACE) or \
+                    (c_map[x_old + x_new][y_old + y_new] == BOX and
+                     c_map[x_old + x_new + x_new][y_old + y_new + y_new] == EMPTY):
+                moves.append(arrow)
+        return moves
 
     #поиск пути для решения сокобана
     def find_solution(self, g_map):
-        rez = []
-        arrows = [72, 80, 75, 77]
+        c_map = self.map_copy(g_map)
+        moves = self.posible_moves(c_map, self.player[0], self.player[1])
+        for movi in moves:
+            x_new, y_new = self.convert_coord(movi)
+            if self.move(x_new, y_new, c_map, False):
+                print('Решение найдено!')
 
-        for arrow in arrows:
-            pass
-
-        return rez
+        pass
 
 
 class Player:
@@ -99,16 +139,16 @@ class Player:
             key = ord(getch())
             if key == 80:  # стрелка вниз
                 game.save_hod(80)
-                rez = g_map.move(1, 0)
+                rez = g_map.move(1, 0, True)
             if key == 72:  # стрелка вверх
                 game.save_hod(72)
-                rez = g_map.move(-1, 0)
+                rez = g_map.move(-1, 0, True)
             if key == 75:  # стрелка влево
                 game.save_hod(75)
-                rez = g_map.move(0, -1)
+                rez = g_map.move(0, -1, True)
             if key == 77:  # стрелка вправо
                 game.save_hod(77)
-                rez = g_map.move(0, 1)
+                rez = g_map.move(0, 1, True)
             if key == 27:  # ESC
                 break
             if rez:
@@ -122,13 +162,13 @@ class AIPlayer:
         for key in key_ids:
             time.sleep(1)
             if int(key) == 80:  # стрелка вниз
-                rez = g_map.move(1, 0)
+                rez = g_map.move(1, 0, True)
             if int(key) == 72:  # стрелка вверх
-                rez = g_map.move(-1, 0)
+                rez = g_map.move(-1, 0, True)
             if int(key) == 75:  # стрелка влево
-                rez = g_map.move(0, -1)
+                rez = g_map.move(0, -1, True)
             if int(key) == 77:  # стрелка вправо
-                rez = g_map.move(0, 1)
+                rez = g_map.move(0, 1, True)
             if rez:
                 return True
 
@@ -173,9 +213,9 @@ class Game:
                 game.replay()
         else:
             pl = AIPlayer()
-            self.key_ids = g_map.find_solution()
-            if pl.hod(g_map, self.key_ids):
-                print('Вы победили!')
+            # self.key_ids = g_map.find_solution()
+            # if pl.hod(g_map, self.key_ids):
+            #     print('Вы победили!')
 
 
     # обработка ввода правильных буквенных ответов на диалоги
