@@ -42,7 +42,11 @@ class GameMap:
             print()
 
     #проверяем победный ли ход
-    def is_win(self, game_map: list) -> bool:
+    def is_win(self, *game_map: list) -> bool:
+        if len(game_map) == 0:
+            game_map = self.game_map
+        else:
+            game_map = game_map[0]
         self.box = []
         for i in range(len(game_map)):
             for j in range(len(game_map)):
@@ -52,7 +56,7 @@ class GameMap:
             return True
 
     #перемещение персонажа - @ стрелками
-    def move(self, x: int, y: int, view: bool, *g_map: list) -> bool:
+    def move(self, x: int, y: int, view: bool, *g_map: list):
         if len(g_map) == 0:
             g_map = self.game_map
         else:
@@ -80,9 +84,9 @@ class GameMap:
             self.player[0] = x_old + x
             self.player[1] = y_old + y
         if view:
-            self.view_board()
-        if self.is_win(g_map):
-            return True
+            self.view_board(g_map)
+        # if self.is_win(g_map):
+        #     return True
 
     #получаем координаты игрока в данный момент
     def get_coord_player(self, game_map: list) -> tuple:
@@ -114,16 +118,16 @@ class GameMap:
         return x, y
 
 
-    def convert_arrow(self, key: int, x: int, y: int) -> list:
-        if key == 72:
-            x -= 1
-        elif key == 80:
-            x += 1
-        elif key == 75:
-            y -= 1
-        elif key == 77:
-            y += 1
-        return [x, y]
+    # def convert_arrow(self, key: int, x: int, y: int) -> list:
+    #     if key == 72:
+    #         x -= 1
+    #     elif key == 80:
+    #         x += 1
+    #     elif key == 75:
+    #         y -= 1
+    #     elif key == 77:
+    #         y += 1
+    #     return [x, y]
 
     #определение возможности хода в 4 направлениях
     def posible_moves(self, x_old, y_old, copy_map: list) -> list:
@@ -145,65 +149,75 @@ class GameMap:
                 moves.append([x_new, y_new])
         return moves
 
+    #получаем Hash нашей карты
+    def get_hash(self, game_map: list) -> int:
+        game_map_tuple = ()
+        for i in range(len(game_map)):
+            game_map_tuple = game_map_tuple + tuple(game_map[i])
+        hash_map = hash(game_map_tuple)
+        return hash_map
+
     #поиск пути для решения сокобана
     def find_solution(self, *game_map: list):
         visited = []
         queue = []
+        hashes = []
         if len(game_map) == 0:
             game_map = self.game_map
         else:
             game_map = game_map[0]
+
         copy_map = self.map_copy(game_map)
+        hashes.append(self.get_hash(copy_map))
+        print('hashes= ', hashes)
         x_pl, y_pl = self.get_coord_player(copy_map)
-        #moves = self.posible_moves(x_pl, y_pl, copy_map)
-        # for movi in moves:
-        #     x_new, y_new = self.convert_coord(movi)
-        #     if self.move(x_new, y_new, False, copy_map):
-        #         print('Решение найдено!')
-        #         return game.key_ids.append(movi)
-        #     else:
-        #         self.find_solution(copy_map)
         visited.append([x_pl, y_pl])
         queue.append([x_pl, y_pl])
+
         while queue:
-            s = queue.pop(0)
-            print('s= ', s)
-            moves = self.posible_moves(s[0], s[1], copy_map)
+            first = queue.pop(0)
+            moves = self.posible_moves(first[0], first[1], copy_map)
             for movi in moves:
-                coord_mov = [s[0] + movi[0], s[1] + movi[1]]
-                if coord_mov not in visited:
-                    print('--coord_mov--', coord_mov)
-                    if self.move(movi[0], movi[1], True, copy_map):
+                temp_map_copy = self.map_copy(copy_map)
+                coord_mov = [first[0] + movi[0], first[1] + movi[1]]
+                self.move(movi[0], movi[1], True, temp_map_copy)
+                temp_hash = self.get_hash(temp_map_copy)
+                print('temp_hash= ', temp_hash)
+                if temp_hash not in hashes:
+                    if self.is_win(temp_map_copy):
                         print('решение найдено')
                         return coord_mov
-                    else:
-                        visited.append(coord_mov)
-                        queue.append(coord_mov)
+                    visited.append(coord_mov)
+                    queue.append(coord_mov)
+                    copy_map = temp_map_copy
+                    hashes.append(temp_hash)
+
+
 
 
 
 class Player:
 
-    def hod(self, game_map: GameMap) -> bool:
+    def hod(self, game_map: GameMap):
         while True:
             key = ord(getch())
             if key == 27:  # ESC
                 break
             x, y = game_map.convert_coord(key)
-            rez = game_map.move(x, y, True)
+            game_map.move(x, y, True)
             game.save_hod(key)
-            if rez:
+            if game_map.is_win():
                 return True
 
 
 class AIPlayer:
 
-    def hod(self, game_map: GameMap, key_ids: list) -> bool:
+    def hod(self, game_map: GameMap, key_ids: list):
         for key in key_ids:
             time.sleep(0.5)
             x, y = game_map.convert_coord(int(key))
-            rez = game_map.move(x, y, True)
-            if rez:
+            game_map.move(x, y, True)
+            if game_map.is_win():
                 return True
 
 
