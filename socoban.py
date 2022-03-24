@@ -1,5 +1,7 @@
 from msvcrt import getch
 from copy import deepcopy
+from pythonds.graphs import Graph
+import pythonds
 import time
 
 BOX = 'B'
@@ -94,14 +96,14 @@ class GameMap:
                     return i, j
 
     #получение копии игровой карты
-    def map_copy(self, *game_map: list) -> list:
+    def game_map_copy(self, *game_map: list) -> list:
         if len(game_map) == 0:
             game_map = self.game_map
         copy_map = deepcopy(game_map[0])
         return copy_map
 
     #преобразуем код нажатой кнопки управления(стрелки) в координаты
-    def convert_coord(self, key: int) -> tuple:
+    def convert_key_to_coord(self, key: int) -> tuple:
         x = 0
         y = 0
         if key == 72:
@@ -115,11 +117,11 @@ class GameMap:
         return x, y
 
     #определение возможности хода в 4 направлениях
-    def possible_moves(self, x_old, y_old, copy_map: list) -> list:
+    def possible_moves(self, x_old: int, y_old: int, copy_map: list) -> list:
         moves = []
         arrows = [72, 80, 75, 77]
         for arrow in arrows:
-            x_new, y_new = self.convert_coord(arrow)
+            x_new, y_new = self.convert_key_to_coord(arrow)
             if (copy_map[x_old + x_new][y_old + y_new] == WALL) or \
                     ((copy_map[x_old + x_new][y_old + y_new] == BOX) and
                     (copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == WALL)) or\
@@ -131,48 +133,69 @@ class GameMap:
         return moves
 
     #получаем Hash нашей карты
-    def get_hash(self, game_map: list) -> int:
+    def get_map_hash(self, game_map: list) -> int:
         game_map_tuple = ()
         for i in range(len(game_map)):
             game_map_tuple = game_map_tuple + tuple(game_map[i])
         hash_map = hash(game_map_tuple)
         return hash_map
 
+    #определяем расположена ли стена по координатам
+    def is_wall(self, x: int, y: int, game_map: list) -> bool:
+        if game_map[x][y] == WALL:
+            return True
+
+    #строим граф ходов на игровом поле
+    def build_move_graph(self):
+        copy_map = self.game_map_copy(self.game_map)
+        muve_graph = {}
+        adj_node = []
+        for i in range(len(self.game_map)):
+            for j in range(len(self.game_map)):
+                if not self.is_wall(i, j, copy_map):
+                    node = (i, j)
+                    moves = self.possible_moves(i, j, copy_map)
+                    for move in moves:
+                        adj_node.append([i + move[0], j + move[1]])
+                    muve_graph[node] = adj_node
+                    adj_node = []
+        print(muve_graph)
+
     #поиск пути для решения сокобана
-    def find_solution(self, *game_map: list):
-        queue = []
-        hashes = []
-        gr = {}
-        if len(game_map) == 0:
-            game_map = self.game_map
-        else:
-            game_map = game_map[0]
-
-        copy_map = self.map_copy(game_map)
-        hashes.append(self.get_hash(copy_map))
-        x_pl, y_pl = self.get_coord_player(copy_map)
-        queue.append([x_pl, y_pl])
-
-        while queue:
-            first = queue.pop(0)
-            print()
-            x_pl, y_pl = self.get_coord_player(copy_map)
-            self.move(first[0] - x_pl, first[0] - y_pl, True, copy_map)
-            moves = self.possible_moves(first[0], first[1], copy_map)
-            list_coord = []
-            print('moves= ', moves)
-            for move in moves:
-                temp_copy_map = self.map_copy(copy_map)
-                coord_mov = [first[0] + move[0], first[1] + move[1]]
-                self.move(move[0], move[1], False, temp_copy_map)
-                temp_hash = self.get_hash(temp_copy_map)
-                queue.append(coord_mov)
-                hashes.append(temp_hash)
-                list_coord.append([move[0], move[1]])
-                #x_pl, y_pl = self.get_coord_player(temp_copy_map)
-                #self.move(first[0] - x_pl, first[0] - y_pl, True, copy_map)
-            gr[(first[0], first[1])] = list_coord
-            print(gr)
+    # def find_solution(self, *game_map: list):
+    #     queue = []
+    #     hashes = []
+    #     gr = {}
+    #     if len(game_map) == 0:
+    #         game_map = self.game_map
+    #     else:
+    #         game_map = game_map[0]
+    #
+    #     copy_map = self.game_map_copy(game_map)
+    #     hashes.append(self.get_hash(copy_map))
+    #     x_pl, y_pl = self.get_coord_player(copy_map)
+    #     queue.append([x_pl, y_pl])
+    #
+    #     while queue:
+    #         first = queue.pop(0)
+    #         print()
+    #         x_pl, y_pl = self.get_coord_player(copy_map)
+    #         self.move(first[0] - x_pl, first[0] - y_pl, True, copy_map)
+    #         moves = self.possible_moves(first[0], first[1], copy_map)
+    #         list_coord = []
+    #         print('moves= ', moves)
+    #         for move in moves:
+    #             temp_copy_map = self.game_map_copy(copy_map)
+    #             coord_mov = [first[0] + move[0], first[1] + move[1]]
+    #             self.move(move[0], move[1], False, temp_copy_map)
+    #             temp_hash = self.get_hash(temp_copy_map)
+    #             queue.append(coord_mov)
+    #             hashes.append(temp_hash)
+    #             list_coord.append([move[0], move[1]])
+    #             #x_pl, y_pl = self.get_coord_player(temp_copy_map)
+    #             #self.move(first[0] - x_pl, first[0] - y_pl, True, copy_map)
+    #         gr[(first[0], first[1])] = list_coord
+    #         print(gr)
 
 
 class Player:
@@ -182,7 +205,7 @@ class Player:
             key = ord(getch())
             if key == 27:  # ESC
                 break
-            x, y = game_map.convert_coord(key)
+            x, y = game_map.convert_key_to_coord(key)
             game_map.move(x, y, True)
             game.save_hod(key)
             if game_map.is_win():
@@ -194,7 +217,7 @@ class AIPlayer:
     def hod(self, game_map: GameMap, key_ids: list):
         for key in key_ids:
             time.sleep(0.5)
-            x, y = game_map.convert_coord(int(key))
+            x, y = game_map.convert_key_to_coord(int(key))
             game_map.move(x, y, True)
             if game_map.is_win():
                 return True
@@ -239,7 +262,8 @@ class Game:
                 game.replay()
         else:
             pl = AIPlayer()
-            game_map.find_solution()
+            game_map.build_move_graph()
+            #game_map.find_solution()
 
     # обработка ввода правильных буквенных ответов на диалоги
     def valid_input_let(self, text: str, zn1: str, zn2: str) -> str:
