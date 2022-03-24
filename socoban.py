@@ -85,8 +85,6 @@ class GameMap:
             self.player[1] = y_old + y
         if view:
             self.view_board(g_map)
-        # if self.is_win(g_map):
-        #     return True
 
     #получаем координаты игрока в данный момент
     def get_coord_player(self, game_map: list) -> tuple:
@@ -104,7 +102,6 @@ class GameMap:
 
     #преобразуем код нажатой кнопки управления(стрелки) в координаты
     def convert_coord(self, key: int) -> tuple:
-        #x, y = self.get_coord_player(self.game_map)
         x = 0
         y = 0
         if key == 72:
@@ -117,24 +114,10 @@ class GameMap:
             y += 1
         return x, y
 
-
-    # def convert_arrow(self, key: int, x: int, y: int) -> list:
-    #     if key == 72:
-    #         x -= 1
-    #     elif key == 80:
-    #         x += 1
-    #     elif key == 75:
-    #         y -= 1
-    #     elif key == 77:
-    #         y += 1
-    #     return [x, y]
-
     #определение возможности хода в 4 направлениях
-    def posible_moves(self, x_old, y_old, copy_map: list) -> list:
+    def possible_moves(self, x_old, y_old, copy_map: list) -> list:
         moves = []
         arrows = [72, 80, 75, 77]
-        #x_old, y_old = self.get_coord_player(copy_map)
-        self.view_board(copy_map)
         for arrow in arrows:
             x_new, y_new = self.convert_coord(arrow)
             if (copy_map[x_old + x_new][y_old + y_new] == WALL) or \
@@ -144,8 +127,6 @@ class GameMap:
                      (copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == BOX)):
                 continue
             else:
-                #coord = self.convert_arrow(arrow, x_old, y_old)
-                #print('coord= ', coord)
                 moves.append([x_new, y_new])
         return moves
 
@@ -159,9 +140,9 @@ class GameMap:
 
     #поиск пути для решения сокобана
     def find_solution(self, *game_map: list):
-        visited = []
         queue = []
         hashes = []
+        gr = {}
         if len(game_map) == 0:
             game_map = self.game_map
         else:
@@ -169,31 +150,29 @@ class GameMap:
 
         copy_map = self.map_copy(game_map)
         hashes.append(self.get_hash(copy_map))
-        print('hashes= ', hashes)
         x_pl, y_pl = self.get_coord_player(copy_map)
-        visited.append([x_pl, y_pl])
         queue.append([x_pl, y_pl])
 
         while queue:
             first = queue.pop(0)
-            moves = self.posible_moves(first[0], first[1], copy_map)
-            for movi in moves:
-                temp_map_copy = self.map_copy(copy_map)
-                coord_mov = [first[0] + movi[0], first[1] + movi[1]]
-                self.move(movi[0], movi[1], True, temp_map_copy)
-                temp_hash = self.get_hash(temp_map_copy)
-                print('temp_hash= ', temp_hash)
-                if temp_hash not in hashes:
-                    if self.is_win(temp_map_copy):
-                        print('решение найдено')
-                        return coord_mov
-                    visited.append(coord_mov)
-                    queue.append(coord_mov)
-                    copy_map = temp_map_copy
-                    hashes.append(temp_hash)
-
-
-
+            print()
+            x_pl, y_pl = self.get_coord_player(copy_map)
+            self.move(first[0] - x_pl, first[0] - y_pl, True, copy_map)
+            moves = self.possible_moves(first[0], first[1], copy_map)
+            list_coord = []
+            print('moves= ', moves)
+            for move in moves:
+                temp_copy_map = self.map_copy(copy_map)
+                coord_mov = [first[0] + move[0], first[1] + move[1]]
+                self.move(move[0], move[1], False, temp_copy_map)
+                temp_hash = self.get_hash(temp_copy_map)
+                queue.append(coord_mov)
+                hashes.append(temp_hash)
+                list_coord.append([move[0], move[1]])
+                #x_pl, y_pl = self.get_coord_player(temp_copy_map)
+                #self.move(first[0] - x_pl, first[0] - y_pl, True, copy_map)
+            gr[(first[0], first[1])] = list_coord
+            print(gr)
 
 
 class Player:
@@ -232,7 +211,6 @@ class Game:
     #получаем карту, и запускаем AI проходить уровень по нашим записанным координатам
     def ai_replay(self):
         game_map = GameMap(self.n)
-        #game_map.view_board()
         pl = AIPlayer()
         pl.hod(game_map, self.key_ids)
 
