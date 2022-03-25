@@ -1,20 +1,23 @@
 from msvcrt import getch
 from copy import deepcopy
+from collections import deque
 import time
 
 BOX = 'B'
+BOX_ON_BOX_PLACE = '*'
 EMPTY = '.'
 PLAY = '@'
+PLAY_ON_BOX_PLACE = '$'
 BOX_PLACE = 'X'
 WALL = '#'
 KEY_MOVES = {119: [-1, 0], 100: [0, 1], 115: [1, 0], 97: [0, -1]}
 # W - 119 -> Up | D - 100  -> Right | S - 115 -> Down | A - 97 -> Left
 
+
 class GameMap:
     def __init__(self, n: int):
         self.game_map = []
         self.n = n
-        self.player = []
         self.pl_box = []
         self.box = []
         #получаем карту из выбранного файла
@@ -22,12 +25,9 @@ class GameMap:
             for line in file:
                 s_line = list(line)
                 self.game_map.append(s_line[:-1])
-        #получаем начальные координаты игрока и мест для ящиков
+        #получаем начальные координаты мест для ящиков
         for i in range(len(self.game_map)):
             for j in range(len(self.game_map)):
-                if self.game_map[i][j] == PLAY:
-                    self.player.append(i)
-                    self.player.append(j)
                 if self.game_map[i][j] == BOX_PLACE:
                     self.pl_box.append([i, j])
 
@@ -52,47 +52,64 @@ class GameMap:
         self.box = []
         for i in range(len(game_map)):
             for j in range(len(game_map)):
-                if game_map[i][j] == BOX:
+                if game_map[i][j] == BOX_ON_BOX_PLACE:
                     self.box.append([i, j])
         if self.box == self.pl_box:
             return True
 
-    #перемещение персонажа - @ стрелками
+    #перемещение персонажа - @ - W A S D
     def move_player(self, key: int, view: bool, *g_map: list):
         if len(g_map) == 0:
             g_map = self.game_map
         else:
             g_map = g_map[0]
+
         x_old, y_old = self.get_coord_player_now(g_map)
         x, y = self.convert_key_to_coord(key)
-        #если перед персонажем пустое поле или поле X для ящика
-        if g_map[x_old + x][y_old + y] == EMPTY or g_map[x_old + x][y_old + y] == BOX_PLACE:
+        #если перед персонажем пустое поле и он не стоит на месте для ящика
+        if g_map[x_old + x][y_old + y] == EMPTY and g_map[x_old][y_old] == PLAY:
             g_map[x_old + x][y_old + y] = PLAY
-            if [x_old, y_old] in self.pl_box:
-                g_map[x_old][y_old] = BOX_PLACE
-            else:
-                g_map[x_old][y_old] = EMPTY
-            self.player[0] = x_old + x
-            self.player[1] = y_old + y
-        #если перед персонажем ящик
-        if g_map[x_old + x][y_old + y] == BOX and (g_map[x_old + x + x][y_old + y + y] == EMPTY
-                                                   or g_map[x_old + x + x][y_old + y + y] == BOX_PLACE):
+            g_map[x_old][y_old] = EMPTY
+        #если перед персонажем поле X для ящика
+        if g_map[x_old + x][y_old + y] == BOX_PLACE:
+            g_map[x_old + x][y_old + y] = PLAY_ON_BOX_PLACE
+            g_map[x_old][y_old] = EMPTY
+        #если перед персонажем пустое поле и он стоит на месте для ящика
+        if g_map[x_old + x][y_old + y] == EMPTY and g_map[x_old][y_old] == PLAY_ON_BOX_PLACE:
+            g_map[x_old + x][y_old + y] = PLAY
+            g_map[x_old][y_old] = BOX_PLACE
+        #если перед персонажем ящик и перед ящиком пустое поле
+        if g_map[x_old][y_old] == PLAY and g_map[x_old + x][y_old + y] == BOX and g_map[x_old + x + x]\
+                [y_old + y + y] == EMPTY:
             g_map[x_old + x][y_old + y] = PLAY
             g_map[x_old + x + x][y_old + y + y] = BOX
-            if [x_old, y_old] in self.pl_box:
-                g_map[x_old][y_old] = BOX_PLACE
-            else:
-                g_map[x_old][y_old] = EMPTY
-            self.player[0] = x_old + x
-            self.player[1] = y_old + y
+            g_map[x_old][y_old] = EMPTY
+        #если перед персонажем ящик и перед ящиком место для ящика
+        if g_map[x_old + x][y_old + y] == BOX and g_map[x_old + x + x][y_old + y + y] == BOX_PLACE:
+            g_map[x_old + x][y_old + y] = PLAY
+            g_map[x_old + x + x][y_old + y + y] = BOX_ON_BOX_PLACE
+            g_map[x_old][y_old] = EMPTY
+        #если ящик стоит на месте и впереди пустое поле
+        if g_map[x_old + x][y_old + y] == BOX_ON_BOX_PLACE and g_map[x_old + x + x][y_old + y + y] == EMPTY:
+            g_map[x_old + x][y_old + y] = PLAY_ON_BOX_PLACE
+            g_map[x_old + x + x][y_old + y + y] = BOX
+            g_map[x_old][y_old] = EMPTY
+        #если персонаж стоит на месте для ящика, впереди ящик и пустое поле
+        if g_map[x_old][y_old] == PLAY_ON_BOX_PLACE and g_map[x_old + x][y_old + y] == BOX and g_map[x_old + x + x]\
+                [y_old + y + y] == EMPTY:
+            g_map[x_old + x][y_old + y] = PLAY
+            g_map[x_old + x + x][y_old + y + y] = BOX
+            g_map[x_old][y_old] = BOX_PLACE
+        #выводим поле на экран если True
         if view:
             self.view_board(g_map)
 
     #получаем координаты игрока в данный момент
-    def get_coord_player_now(self, game_map: list) -> tuple:
+    @staticmethod
+    def get_coord_player_now(game_map: list) -> tuple:
         for i in range(len(game_map)):
             for j in range(len(game_map)):
-                if game_map[i][j] == PLAY:
+                if game_map[i][j] == PLAY or game_map[i][j] == PLAY_ON_BOX_PLACE:
                     return i, j
 
     #получение копии игровой карты
@@ -103,7 +120,8 @@ class GameMap:
         return copy_map
 
     #преобразуем код нажатой кнопки управления(стрелки) в координаты
-    def convert_key_to_coord(self, key: int) -> tuple:
+    @staticmethod
+    def convert_key_to_coord(key: int) -> tuple:
         x_y = KEY_MOVES.get(key, 100)
         if x_y == 100:
             print('Управление происходит кнопками: W - UP, S - DOWN, A - LEFT, D - RIGHT.')
@@ -120,7 +138,7 @@ class GameMap:
         for arrow in list(KEY_MOVES.keys()):
             x_new, y_new = self.convert_key_to_coord(arrow)
             if (copy_map[x_old + x_new][y_old + y_new] == WALL) or \
-                    ((copy_map[x_old + x_new][y_old + y_new] == BOX) and\
+                    ((copy_map[x_old + x_new][y_old + y_new] == BOX) and
                      (copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == WALL)) or \
                     ((copy_map[x_old + x_new][y_old + y_new] == BOX) and
                      (copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == BOX)):
@@ -130,7 +148,8 @@ class GameMap:
         return moves
 
     #получаем Hash нашей карты
-    def get_map_hash(self, game_map: list) -> int:
+    @staticmethod
+    def get_map_hash(game_map: list) -> int:
         game_map_tuple = ()
         for i in range(len(game_map)):
             game_map_tuple = game_map_tuple + tuple(game_map[i])
@@ -138,21 +157,60 @@ class GameMap:
         return hash_map
 
     #определяем расположена ли стена по координатам
-    def is_wall(self, x: int, y: int, game_map: list) -> bool:
+    @staticmethod
+    def is_wall(x: int, y: int, game_map: list) -> bool:
         if game_map[x][y] == WALL:
             return True
 
     #строим граф ходов на игровом поле
-    def build_move_graph(self):
+    def build_move_graph(self) -> dict:
         copy_map = self.game_map_copy(self.game_map)
-        muve_graph = {}
+        move_graph = {}
         for i in range(len(self.game_map)):
             for j in range(len(self.game_map)):
                 if not self.is_wall(i, j, copy_map):
                     node = (i, j)
                     moves = self.possible_moves(i, j, copy_map)
-                    muve_graph[node] = moves
-        return muve_graph
+                    move_graph[node] = moves
+        return move_graph
+
+    def get_list_coord_box_player_walls(self):
+        box_player = []
+        wall_storage = []
+        n = len(self.game_map)
+
+        for i in range(n):
+            box_player.append([])
+            wall_storage.append([])
+            for j in range(n):
+                box_player[-1].append('-')
+                wall_storage[-1].append('-')
+
+        for i in range(n):
+            for j in range(n):
+                if self.game_map[i][j] == 'B' or self.game_map[i][j] == 'R':
+                    box_player[i][j] = self.game_map[i][j]
+                    wall_storage[i][j] = ' '
+                elif self.game_map[i][j] == 'S' or self.game_map[i][j] == 'O':
+                    wall_storage[i][j] = self.game_map[i][j]
+                    box_player[i][j] = ' '
+                elif self.game_map[i][j] == ' ':
+                    box_player[i][j] = ' '
+                    wall_storage[i][j] = ' '
+                elif self.game_map[i][j] == '*':
+                    box_player[i][j] = 'B'
+                    wall_storage[i][j] = 'S'
+                elif self.game_map[i][j] == '.':
+                    box_player[i][j] = 'R'
+                    wall_storage[i][j] = 'S'
+        return box_player, wall_storage
+
+    def bfs(self):
+        moves_list = []
+        visited_moves = []
+        box_player, wall_storage = self.get_list_coord_box_player_walls()
+        queue = deque([])
+        source = [box_player, wall_storage]
 
     # def bfs(self):
     #     queue = []
@@ -185,9 +243,6 @@ class GameMap:
     #                 print('neighbour= ', neighbour)
     #                 if neighbour not in visited:
     #                     queue.append(neighbour)
-            # else:
-            #     self.move_player(x_new, y_new, True, copy_map)
-
     #поиск пути для решения сокобана
     # def find_solution(self, *game_map: list):
     #     queue = []
@@ -227,7 +282,8 @@ class GameMap:
 
 class Player:
 
-    def hod(self, game_map: GameMap):
+    @staticmethod
+    def hod(game_map: GameMap):
         while True:
             key = ord(getch())
             if key == 27:  # ESC
@@ -239,8 +295,8 @@ class Player:
 
 
 class AIPlayer:
-
-    def hod(self, game_map: GameMap, key_ids: list):
+    @staticmethod
+    def hod(game_map: GameMap, key_ids: list):
         for key in key_ids:
             time.sleep(0.5)
             game_map.move_player(int(key), True)
@@ -292,19 +348,21 @@ class Game:
             #game_map.find_solution()
 
     # обработка ввода правильных буквенных ответов на диалоги
-    def valid_input_let(self, text: str, zn1: str, zn2: str) -> str:
+    @staticmethod
+    def valid_input_let(text: str, zn1: str, zn2: str) -> str:
         while True:
-            vvod = input(text + '"' + zn1 + '" или "' + zn2 + '": ')
-            if vvod.isalpha() and (vvod == zn1 or vvod == zn2):
-                return vvod
+            enter = input(text + '"' + zn1 + '" или "' + zn2 + '": ')
+            if enter.isalpha() and (enter == zn1 or enter == zn2):
+                return enter
             else:
                 print('Введите ' + '"' + zn1 + '" или "' + zn2 + '"!')
 
     #отработка корректного ввода в консоль числа(номер уровня)
-    def valid_input_dig(self, text: str) -> int:
+    @staticmethod
+    def valid_input_dig(text: str) -> int:
         while True:
             level = input(text)
-            if level.isdigit() and int(level) >= 1 and int(level) <= 5:
+            if level.isdigit() and (int(level) >= 1) and (int(level) <= 5):
                 return int(level)
             else:
                 print('Введите номер уровня от 1 до 5!')
