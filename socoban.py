@@ -1,7 +1,5 @@
 from msvcrt import getch
 from copy import deepcopy
-from pythonds.graphs import Graph
-import pythonds
 import time
 
 BOX = 'B'
@@ -58,13 +56,12 @@ class GameMap:
             return True
 
     #перемещение персонажа - @ стрелками
-    def move(self, x: int, y: int, view: bool, *g_map: list):
+    def move_player(self, x: int, y: int, view: bool, *g_map: list):
         if len(g_map) == 0:
             g_map = self.game_map
         else:
             g_map = g_map[0]
-        x_old, y_old = self.get_coord_player(g_map)
-        #self.view_board(g_map)
+        x_old, y_old = self.get_coord_player_now(g_map)
         #если перед персонажем пустое поле или поле X для ящика
         if g_map[x_old + x][y_old + y] == EMPTY or g_map[x_old + x][y_old + y] == BOX_PLACE:
             g_map[x_old + x][y_old + y] = PLAY
@@ -89,9 +86,9 @@ class GameMap:
             self.view_board(g_map)
 
     #получаем координаты игрока в данный момент
-    def get_coord_player(self, game_map: list) -> tuple:
-        for i in range(len(self.game_map)):
-            for j in range(len(self.game_map)):
+    def get_coord_player_now(self, game_map: list) -> tuple:
+        for i in range(len(game_map)):
+            for j in range(len(game_map)):
                 if game_map[i][j] == PLAY:
                     return i, j
 
@@ -159,7 +156,40 @@ class GameMap:
                         adj_node.append([i + move[0], j + move[1]])
                     muve_graph[node] = adj_node
                     adj_node = []
-        print(muve_graph)
+        return muve_graph
+
+    def bfs(self):
+        queue = []
+        visited = []
+        hashes = []
+        graph = self.build_move_graph()
+        copy_map = self.game_map_copy(self.game_map)
+        x_pl, y_pl = self.get_coord_player_now(copy_map)
+        queue.append([x_pl, y_pl])
+        while queue:
+            s = queue.pop(0)
+            print('s= ', s)
+            x_pl, y_pl = self.get_coord_player_now(copy_map)
+            x_new = s[0] - x_pl
+            y_new = s[1] - y_pl
+            self.move_player(x_new, y_new, True, copy_map)
+            hash = self.get_map_hash(copy_map)
+            print('queue= ', queue)
+            print('visited= ', visited)
+
+            if hash not in hashes:
+                hashes.append(hash)
+                print('hashes= ', hashes)
+                visited.append(s)
+                if self.is_win(copy_map):
+                    print('Выйигрышная комбинация найдена!')
+                    return s
+                for neighbour in graph[(s[0], s[1])]:
+                    print('neighbour= ', neighbour)
+                    if neighbour not in visited:
+                        queue.append(neighbour)
+            # else:
+            #     self.move_player(x_new, y_new, True, copy_map)
 
     #поиск пути для решения сокобана
     # def find_solution(self, *game_map: list):
@@ -206,7 +236,7 @@ class Player:
             if key == 27:  # ESC
                 break
             x, y = game_map.convert_key_to_coord(key)
-            game_map.move(x, y, True)
+            game_map.move_player(x, y, True)
             game.save_hod(key)
             if game_map.is_win():
                 return True
@@ -218,7 +248,7 @@ class AIPlayer:
         for key in key_ids:
             time.sleep(0.5)
             x, y = game_map.convert_key_to_coord(int(key))
-            game_map.move(x, y, True)
+            game_map.move_player(x, y, True)
             if game_map.is_win():
                 return True
 
@@ -263,6 +293,7 @@ class Game:
         else:
             pl = AIPlayer()
             game_map.build_move_graph()
+            game_map.bfs()
             #game_map.find_solution()
 
     # обработка ввода правильных буквенных ответов на диалоги
