@@ -7,6 +7,8 @@ EMPTY = '.'
 PLAY = '@'
 BOX_PLACE = 'X'
 WALL = '#'
+KEY_MOVES = {119: [-1, 0], 100: [0, 1], 115: [1, 0], 97: [0, -1]}
+# W - 119 -> Up | D - 100  -> Right | S - 115 -> Down | A - 97 -> Left
 
 class GameMap:
     def __init__(self, n: int):
@@ -41,7 +43,7 @@ class GameMap:
                 print(g_map[i][j], end=' ')
             print()
 
-    #проверяем победный ли ход
+    #проверяем победный ход или нет
     def is_win(self, *game_map: list) -> bool:
         if len(game_map) == 0:
             game_map = self.game_map
@@ -56,12 +58,13 @@ class GameMap:
             return True
 
     #перемещение персонажа - @ стрелками
-    def move_player(self, x: int, y: int, view: bool, *g_map: list):
+    def move_player(self, key: int, view: bool, *g_map: list):
         if len(g_map) == 0:
             g_map = self.game_map
         else:
             g_map = g_map[0]
         x_old, y_old = self.get_coord_player_now(g_map)
+        x, y = self.convert_key_to_coord(key)
         #если перед персонажем пустое поле или поле X для ящика
         if g_map[x_old + x][y_old + y] == EMPTY or g_map[x_old + x][y_old + y] == BOX_PLACE:
             g_map[x_old + x][y_old + y] = PLAY
@@ -73,7 +76,7 @@ class GameMap:
             self.player[1] = y_old + y
         #если перед персонажем ящик
         if g_map[x_old + x][y_old + y] == BOX and (g_map[x_old + x + x][y_old + y + y] == EMPTY
-                                                        or g_map[x_old + x + x][y_old + y + y] == BOX_PLACE):
+                                                   or g_map[x_old + x + x][y_old + y + y] == BOX_PLACE):
             g_map[x_old + x][y_old + y] = PLAY
             g_map[x_old + x + x][y_old + y + y] = BOX
             if [x_old, y_old] in self.pl_box:
@@ -101,32 +104,29 @@ class GameMap:
 
     #преобразуем код нажатой кнопки управления(стрелки) в координаты
     def convert_key_to_coord(self, key: int) -> tuple:
-        x = 0
-        y = 0
-        if key == 72:
-            x -= 1
-        elif key == 80:
-            x += 1
-        elif key == 75:
-            y -= 1
-        elif key == 77:
-            y += 1
+        x_y = KEY_MOVES.get(key, 100)
+        if x_y == 100:
+            print('Управление происходит кнопками: W - UP, S - DOWN, A - LEFT, D - RIGHT.')
+            x = 0
+            y = 0
+        else:
+            x = x_y[0]
+            y = x_y[1]
         return x, y
 
     #определение возможности хода в 4 направлениях
     def possible_moves(self, x_old: int, y_old: int, copy_map: list) -> list:
         moves = []
-        arrows = [72, 80, 75, 77]
-        for arrow in arrows:
+        for arrow in list(KEY_MOVES.keys()):
             x_new, y_new = self.convert_key_to_coord(arrow)
             if (copy_map[x_old + x_new][y_old + y_new] == WALL) or \
-                    ((copy_map[x_old + x_new][y_old + y_new] == BOX) and
-                    (copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == WALL)) or\
+                    ((copy_map[x_old + x_new][y_old + y_new] == BOX) and\
+                     (copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == WALL)) or \
                     ((copy_map[x_old + x_new][y_old + y_new] == BOX) and
                      (copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == BOX)):
                 continue
             else:
-                moves.append([x_new, y_new])
+                moves.append(arrow)
         return moves
 
     #получаем Hash нашей карты
@@ -146,48 +146,45 @@ class GameMap:
     def build_move_graph(self):
         copy_map = self.game_map_copy(self.game_map)
         muve_graph = {}
-        adj_node = []
         for i in range(len(self.game_map)):
             for j in range(len(self.game_map)):
                 if not self.is_wall(i, j, copy_map):
                     node = (i, j)
                     moves = self.possible_moves(i, j, copy_map)
-                    for move in moves:
-                        adj_node.append([i + move[0], j + move[1]])
-                    muve_graph[node] = adj_node
-                    adj_node = []
+                    muve_graph[node] = moves
         return muve_graph
 
-    def bfs(self):
-        queue = []
-        visited = []
-        hashes = []
-        graph = self.build_move_graph()
-        copy_map = self.game_map_copy(self.game_map)
-        x_pl, y_pl = self.get_coord_player_now(copy_map)
-        queue.append([x_pl, y_pl])
-        while queue:
-            s = queue.pop(0)
-            print('s= ', s)
-            x_pl, y_pl = self.get_coord_player_now(copy_map)
-            x_new = s[0] - x_pl
-            y_new = s[1] - y_pl
-            self.move_player(x_new, y_new, True, copy_map)
-            hash = self.get_map_hash(copy_map)
-            print('queue= ', queue)
-            print('visited= ', visited)
-
-            if hash not in hashes:
-                hashes.append(hash)
-                print('hashes= ', hashes)
-                visited.append(s)
-                if self.is_win(copy_map):
-                    print('Выйигрышная комбинация найдена!')
-                    return s
-                for neighbour in graph[(s[0], s[1])]:
-                    print('neighbour= ', neighbour)
-                    if neighbour not in visited:
-                        queue.append(neighbour)
+    # def bfs(self):
+    #     queue = []
+    #     visited = []
+    #     hashes = []
+    #     graph = self.build_move_graph()
+    #     copy_map = self.game_map_copy(self.game_map)
+    #     x_pl, y_pl = self.get_coord_player_now(copy_map)
+    #     queue.append(72)
+    #     while queue:
+    #         s = queue.pop(0)
+    #         print('s= ', s)
+    #         x_pl, y_pl = self.get_coord_player_now(copy_map)
+    #         x_new = s[0] - x_pl
+    #         y_new = s[1] - y_pl
+    #         print('x_new= ', x_new, 'y_new= ', y_new)
+    #         self.move_player(key, True, copy_map)
+    #         hash = self.get_map_hash(copy_map)
+    #         print('queue= ', queue)
+    #         print('visited= ', visited)
+    #
+    #         if hash not in hashes:
+    #             hashes.append(hash)
+    #             print('hashes= ', hashes)
+    #             visited.append(s)
+    #             if self.is_win(copy_map):
+    #                 print('Выйигрышная комбинация найдена!')
+    #                 return s
+    #             for neighbour in graph[s]:
+    #                 print('neighbour= ', neighbour)
+    #                 if neighbour not in visited:
+    #                     queue.append(neighbour)
             # else:
             #     self.move_player(x_new, y_new, True, copy_map)
 
@@ -235,8 +232,7 @@ class Player:
             key = ord(getch())
             if key == 27:  # ESC
                 break
-            x, y = game_map.convert_key_to_coord(key)
-            game_map.move_player(x, y, True)
+            game_map.move_player(key, True)
             game.save_hod(key)
             if game_map.is_win():
                 return True
@@ -247,8 +243,7 @@ class AIPlayer:
     def hod(self, game_map: GameMap, key_ids: list):
         for key in key_ids:
             time.sleep(0.5)
-            x, y = game_map.convert_key_to_coord(int(key))
-            game_map.move_player(x, y, True)
+            game_map.move_player(int(key), True)
             if game_map.is_win():
                 return True
 
