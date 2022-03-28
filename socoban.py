@@ -179,7 +179,7 @@ class GameMap:
         return move_graph
 
     #определяем если ли вдоль стены место для ящика Х
-    def plaсe_x(self, x: int, y: int, game_map: list) -> bool:
+    def place_x(self, x: int, y: int) -> bool:
         for box in self.pl_box:
             if box[0] == x or box[1] == y:
                 return True
