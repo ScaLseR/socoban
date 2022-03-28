@@ -188,21 +188,21 @@ class GameMap:
 
         for i in range(n):
             for j in range(n):
-                if self.game_map[i][j] == 'B' or self.game_map[i][j] == 'R':
+                if self.game_map[i][j] == BOX or self.game_map[i][j] == PLAY:
                     box_player[i][j] = self.game_map[i][j]
-                    wall_storage[i][j] = ' '
-                elif self.game_map[i][j] == 'S' or self.game_map[i][j] == 'O':
+                    wall_storage[i][j] = EMPTY
+                elif self.game_map[i][j] == BOX_PLACE or self.game_map[i][j] == WALL:
                     wall_storage[i][j] = self.game_map[i][j]
-                    box_player[i][j] = ' '
-                elif self.game_map[i][j] == ' ':
-                    box_player[i][j] = ' '
-                    wall_storage[i][j] = ' '
-                elif self.game_map[i][j] == '*':
-                    box_player[i][j] = 'B'
-                    wall_storage[i][j] = 'S'
-                elif self.game_map[i][j] == '.':
-                    box_player[i][j] = 'R'
-                    wall_storage[i][j] = 'S'
+                    box_player[i][j] = EMPTY
+                elif self.game_map[i][j] == EMPTY:
+                    box_player[i][j] = EMPTY
+                    wall_storage[i][j] = EMPTY
+                elif self.game_map[i][j] == BOX_ON_BOX_PLACE:
+                    box_player[i][j] = BOX
+                    wall_storage[i][j] = BOX_PLACE
+                elif self.game_map[i][j] == PLAY_ON_BOX_PLACE:
+                    box_player[i][j] = PLAY
+                    wall_storage[i][j] = BOX_PLACE
         return box_player, wall_storage
 
     def bfs(self):
@@ -308,11 +308,11 @@ class Game:
     key_ids = []
     n = 0
 
-    # запись ходов в список для повтора
+    # запись ходов в список для replay уровня
     def save_hod(self, key_id: int):
         self.key_ids.append(key_id)
 
-    #получаем карту, и запускаем AI проходить уровень по нашим записанным координатам
+    #получаем карту, и запускаем AI проходить уровень по нашим сохраненным координатам
     def ai_replay(self):
         game_map = GameMap(self.n)
         pl = AIPlayer()
@@ -342,7 +342,7 @@ class Game:
                 print('Вы победили!')
                 game.replay()
         else:
-            pl = AIPlayer()
+            #pl = AIPlayer()
             game_map.build_move_graph()
             game_map.bfs()
             #game_map.find_solution()
