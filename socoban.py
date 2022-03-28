@@ -1,8 +1,9 @@
 from msvcrt import getch
 from copy import deepcopy
-from collections import deque
+#import sys
 import time
 
+#sys.setrecursionlimit(1000000000)
 BOX = 'B'
 BOX_ON_BOX_PLACE = '*'
 EMPTY = '.'
@@ -12,6 +13,8 @@ BOX_PLACE = 'X'
 WALL = '#'
 KEY_MOVES = {119: [-1, 0], 100: [0, 1], 115: [1, 0], 97: [0, -1]}
 # W - 119 -> Up | D - 100  -> Right | S - 115 -> Down | A - 97 -> Left
+visited = []
+hashes = []
 
 
 class GameMap:
@@ -141,7 +144,8 @@ class GameMap:
                     ((copy_map[x_old + x_new][y_old + y_new] == BOX) and
                      (copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == WALL)) or \
                     ((copy_map[x_old + x_new][y_old + y_new] == BOX) and
-                     (copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == BOX)):
+                     (copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == BOX)) or \
+                    (copy_map[x_old + x_new][y_old + y_new] == BOX_ON_BOX_PLACE):
                 continue
             else:
                 moves.append(arrow)
@@ -174,110 +178,43 @@ class GameMap:
                     move_graph[node] = moves
         return move_graph
 
-    def get_list_coord_box_player_walls(self):
-        box_player = []
-        wall_storage = []
-        n = len(self.game_map)
+    #определяем если ли вдоль стены место для ящика Х
+    def plaсe_x(self, x: int, y: int, game_map: list) -> bool:
+        for box in self.pl_box:
+            if box[0] == x or box[1] == y:
+                return True
+        return False
 
-        for i in range(n):
-            box_player.append([])
-            wall_storage.append([])
-            for j in range(n):
-                box_player[-1].append('-')
-                wall_storage[-1].append('-')
+    #поиск решения методом BFS
+    def find_way(self, *maps):
+        if len(maps) == 0:
+            game_map = self.game_map
+        else:
+            game_map = maps[0]
 
-        for i in range(n):
-            for j in range(n):
-                if self.game_map[i][j] == BOX or self.game_map[i][j] == PLAY:
-                    box_player[i][j] = self.game_map[i][j]
-                    wall_storage[i][j] = EMPTY
-                elif self.game_map[i][j] == BOX_PLACE or self.game_map[i][j] == WALL:
-                    wall_storage[i][j] = self.game_map[i][j]
-                    box_player[i][j] = EMPTY
-                elif self.game_map[i][j] == EMPTY:
-                    box_player[i][j] = EMPTY
-                    wall_storage[i][j] = EMPTY
-                elif self.game_map[i][j] == BOX_ON_BOX_PLACE:
-                    box_player[i][j] = BOX
-                    wall_storage[i][j] = BOX_PLACE
-                elif self.game_map[i][j] == PLAY_ON_BOX_PLACE:
-                    box_player[i][j] = PLAY
-                    wall_storage[i][j] = BOX_PLACE
-        return box_player, wall_storage
-
-    def bfs(self):
-        moves_list = []
-        visited_moves = []
-        box_player, wall_storage = self.get_list_coord_box_player_walls()
-        queue = deque([])
-        source = [box_player, wall_storage]
-
-    # def bfs(self):
-    #     queue = []
-    #     visited = []
-    #     hashes = []
-    #     graph = self.build_move_graph()
-    #     copy_map = self.game_map_copy(self.game_map)
-    #     x_pl, y_pl = self.get_coord_player_now(copy_map)
-    #     queue.append(72)
-    #     while queue:
-    #         s = queue.pop(0)
-    #         print('s= ', s)
-    #         x_pl, y_pl = self.get_coord_player_now(copy_map)
-    #         x_new = s[0] - x_pl
-    #         y_new = s[1] - y_pl
-    #         print('x_new= ', x_new, 'y_new= ', y_new)
-    #         self.move_player(key, True, copy_map)
-    #         hash = self.get_map_hash(copy_map)
-    #         print('queue= ', queue)
-    #         print('visited= ', visited)
-    #
-    #         if hash not in hashes:
-    #             hashes.append(hash)
-    #             print('hashes= ', hashes)
-    #             visited.append(s)
-    #             if self.is_win(copy_map):
-    #                 print('Выйигрышная комбинация найдена!')
-    #                 return s
-    #             for neighbour in graph[s]:
-    #                 print('neighbour= ', neighbour)
-    #                 if neighbour not in visited:
-    #                     queue.append(neighbour)
-    #поиск пути для решения сокобана
-    # def find_solution(self, *game_map: list):
-    #     queue = []
-    #     hashes = []
-    #     gr = {}
-    #     if len(game_map) == 0:
-    #         game_map = self.game_map
-    #     else:
-    #         game_map = game_map[0]
-    #
-    #     copy_map = self.game_map_copy(game_map)
-    #     hashes.append(self.get_hash(copy_map))
-    #     x_pl, y_pl = self.get_coord_player(copy_map)
-    #     queue.append([x_pl, y_pl])
-    #
-    #     while queue:
-    #         first = queue.pop(0)
-    #         print()
-    #         x_pl, y_pl = self.get_coord_player(copy_map)
-    #         self.move(first[0] - x_pl, first[0] - y_pl, True, copy_map)
-    #         moves = self.possible_moves(first[0], first[1], copy_map)
-    #         list_coord = []
-    #         print('moves= ', moves)
-    #         for move in moves:
-    #             temp_copy_map = self.game_map_copy(copy_map)
-    #             coord_mov = [first[0] + move[0], first[1] + move[1]]
-    #             self.move(move[0], move[1], False, temp_copy_map)
-    #             temp_hash = self.get_hash(temp_copy_map)
-    #             queue.append(coord_mov)
-    #             hashes.append(temp_hash)
-    #             list_coord.append([move[0], move[1]])
-    #             #x_pl, y_pl = self.get_coord_player(temp_copy_map)
-    #             #self.move(first[0] - x_pl, first[0] - y_pl, True, copy_map)
-    #         gr[(first[0], first[1])] = list_coord
-    #         print(gr)
+        copy_map = self.game_map_copy(game_map)
+        x_pl, y_pl = self.get_coord_player_now(copy_map)
+        pos_move = self.possible_moves(x_pl, y_pl, copy_map)
+        if self.is_win(copy_map):
+            return True
+        else:
+            for move in pos_move:
+                copy2_map = self.game_map_copy(copy_map)
+                x_move = KEY_MOVES[move][0]
+                y_move = KEY_MOVES[move][1]
+                print(x_move, y_move)
+                if copy2_map[x_pl + x_move][y_pl + y_move] == BOX and \
+                        copy2_map[x_pl + x_move * 2][y_pl + y_move * 2] == EMPTY and\
+                        copy2_map[x_pl + x_move * 3][y_pl + y_move * 3] == WALL:
+                    continue
+                else:
+                    self.move_player(move, False, copy2_map)
+                    map_hash = self.get_map_hash(copy2_map)
+                    if map_hash not in hashes:
+                        visited.append(move)
+                        hashes.append(map_hash)
+                        self.move_player(move, True, copy_map)
+                        self.find_way(copy_map)
 
 
 class Player:
@@ -342,10 +279,9 @@ class Game:
                 print('Вы победили!')
                 game.replay()
         else:
-            #pl = AIPlayer()
-            game_map.build_move_graph()
-            game_map.bfs()
-            #game_map.find_solution()
+            pl = AIPlayer()
+            if game_map.find_way():
+                print('Решение найдено!!')
 
     # обработка ввода правильных буквенных ответов на диалоги
     @staticmethod
