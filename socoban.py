@@ -6,7 +6,6 @@ BOX = 'B'
 BOX_ON_BOX_PLACE = '*'
 EMPTY = '.'
 PLAY = '@'
-PLAY_ON_BOX_PLACE = '$'
 BOX_PLACE = 'X'
 WALL = '#'
 KEY_MOVES = {119: [-1, 0], 100: [0, 1], 115: [1, 0], 97: [0, -1]}
@@ -67,40 +66,26 @@ class GameMap:
 
         x_old, y_old = self.get_coord_player_now(g_map)
         x, y = self.convert_key_to_coord(key)
-        #если перед персонажем пустое поле и он не стоит на месте для ящика
-        if g_map[x_old + x][y_old + y] == EMPTY and g_map[x_old][y_old] == PLAY:
+        #если перед персонажем пустое поле или поле для ящика
+        if g_map[x_old + x][y_old + y] == EMPTY or g_map[x_old + x][y_old + y] == BOX_PLACE:
             g_map[x_old + x][y_old + y] = PLAY
-            g_map[x_old][y_old] = EMPTY
-        #если перед персонажем поле X для ящика
-        if g_map[x_old + x][y_old + y] == BOX_PLACE:
-            g_map[x_old + x][y_old + y] = PLAY_ON_BOX_PLACE
-            g_map[x_old][y_old] = EMPTY
-        #если перед персонажем пустое поле и он стоит на месте для ящика
-        if g_map[x_old + x][y_old + y] == EMPTY and g_map[x_old][y_old] == PLAY_ON_BOX_PLACE:
+            if [x_old, y_old] in self.pl_box:
+                g_map[x_old][y_old] = BOX_PLACE
+            else:
+                g_map[x_old][y_old] = EMPTY
+        # если перед персонажем ящик
+        if (g_map[x_old + x][y_old + y] == BOX or g_map[x_old + x][y_old + y] == BOX_ON_BOX_PLACE) and (
+                g_map[x_old + x + x][y_old + y + y] == EMPTY or g_map[x_old + x + x][y_old + y + y] == BOX_PLACE):
             g_map[x_old + x][y_old + y] = PLAY
-            g_map[x_old][y_old] = BOX_PLACE
-        #если перед персонажем ящик и перед ящиком пустое поле
-        if g_map[x_old][y_old] == PLAY and g_map[x_old + x][y_old + y] == BOX and g_map[x_old + x + x]\
-                [y_old + y + y] == EMPTY:
-            g_map[x_old + x][y_old + y] = PLAY
-            g_map[x_old + x + x][y_old + y + y] = BOX
+            if g_map[x_old + x + x][y_old + y + y] == BOX_PLACE:
+                g_map[x_old + x + x][y_old + y + y] = BOX_ON_BOX_PLACE
+            else:
+                g_map[x_old + x + x][y_old + y + y] = BOX
             g_map[x_old][y_old] = EMPTY
-        #если перед персонажем ящик и перед ящиком место для ящика
-        if g_map[x_old + x][y_old + y] == BOX and g_map[x_old + x + x][y_old + y + y] == BOX_PLACE:
-            g_map[x_old + x][y_old + y] = PLAY
-            g_map[x_old + x + x][y_old + y + y] = BOX_ON_BOX_PLACE
-            g_map[x_old][y_old] = EMPTY
-        #если ящик стоит на месте и впереди пустое поле
-        if g_map[x_old + x][y_old + y] == BOX_ON_BOX_PLACE and g_map[x_old + x + x][y_old + y + y] == EMPTY:
-            g_map[x_old + x][y_old + y] = PLAY_ON_BOX_PLACE
-            g_map[x_old + x + x][y_old + y + y] = BOX
-            g_map[x_old][y_old] = EMPTY
-        #если персонаж стоит на месте для ящика, впереди ящик и пустое поле
-        if g_map[x_old][y_old] == PLAY_ON_BOX_PLACE and g_map[x_old + x][y_old + y] == BOX and g_map[x_old + x + x]\
-                [y_old + y + y] == EMPTY:
-            g_map[x_old + x][y_old + y] = PLAY
-            g_map[x_old + x + x][y_old + y + y] = BOX
-            g_map[x_old][y_old] = BOX_PLACE
+            if [x_old, y_old] in self.pl_box:
+                g_map[x_old][y_old] = BOX_PLACE
+            else:
+                g_map[x_old][y_old] = EMPTY
         #выводим поле на экран если True
         if view:
             self.view_board(g_map)
@@ -110,7 +95,7 @@ class GameMap:
     def get_coord_player_now(game_map: list) -> tuple:
         for i in range(len(game_map)):
             for j in range(len(game_map)):
-                if game_map[i][j] == PLAY or game_map[i][j] == PLAY_ON_BOX_PLACE:
+                if game_map[i][j] == PLAY:
                     return i, j
 
     #получение копии игровой карты
@@ -138,12 +123,13 @@ class GameMap:
         moves = []
         for arrow in list(KEY_MOVES.keys()):
             x_new, y_new = self.convert_key_to_coord(arrow)
-            if (copy_map[x_old + x_new][y_old + y_new] == WALL) or \
-                    ((copy_map[x_old + x_new][y_old + y_new] == BOX) and
-                     (copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == WALL)) or \
-                    ((copy_map[x_old + x_new][y_old + y_new] == BOX) and
-                     (copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == BOX)) or \
-                    (copy_map[x_old + x_new][y_old + y_new] == BOX_ON_BOX_PLACE):
+            if copy_map[x_old + x_new][y_old + y_new] == WALL or \
+                    (copy_map[x_old + x_new][y_old + y_new] == BOX and
+                     copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == WALL) or \
+                    (copy_map[x_old + x_new][y_old + y_new] == BOX and
+                     copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == BOX) or \
+                    (copy_map[x_old + x_new][y_old + y_new] == BOX_ON_BOX_PLACE and
+                     copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == EMPTY):
                 continue
             else:
                 moves.append(arrow)
@@ -203,29 +189,44 @@ class GameMap:
         copy_map = self.game_map_copy(game_map)
         x_pl, y_pl = self.get_coord_player_now(copy_map)
         pos_move = self.possible_moves(x_pl, y_pl, copy_map)
-        if self.is_win(copy_map):
-            self.view_find_way()
-            return True
-        else:
-            for move in pos_move:
-                copy2_map = self.game_map_copy(copy_map)
-                x_move = KEY_MOVES[move][0]
-                y_move = KEY_MOVES[move][1]
-                if copy2_map[x_pl + x_move][y_pl + y_move] == BOX and \
-                        copy2_map[x_pl + x_move * 2][y_pl + y_move * 2] == EMPTY and\
-                        copy2_map[x_pl + x_move * 3][y_pl + y_move * 3] == WALL:
-                    continue
-                else:
-                    self.move_player(move, False, copy2_map)
-                    map_hash = self.get_map_hash(copy2_map)
-                    if map_hash not in hashes:
-                        visited.append(move)
-                        hashes.append(map_hash)
-                        self.move_player(move, False, copy_map)
-                        if self.is_win(copy_map):
-                            self.view_find_way()
-                            return True
-                        self.find_way(copy_map)
+        print('os_move= ', pos_move)
+        # if self.is_win(copy_map):
+        #     self.view_find_way()
+            #return True
+        #else:
+        for move in pos_move:
+            print('move= ', move)
+            copy2_map = self.game_map_copy(copy_map)
+            x_move = KEY_MOVES[move][0]
+            y_move = KEY_MOVES[move][1]
+            if copy2_map[x_pl + x_move][y_pl + y_move] == BOX and copy2_map[x_pl + x_move * 2][y_pl + y_move * 2] == EMPTY and copy2_map[x_pl + x_move * 3][y_pl + y_move * 3] == WALL:
+                print('copy2_map[x_pl + x_move][y_pl + y_move]= ', copy2_map[x_pl + x_move][y_pl + y_move])
+                print('copy2_map[x_pl + x_move * 3][y_pl + y_move * 3]= ', copy2_map[x_pl + x_move * 3][y_pl + y_move * 3])
+                print('x= ', x_pl, 'y= ', y_pl, 'x_move= ', x_move, 'y_move= ', y_move, ' -мимо')
+                continue
+            elif copy2_map[x_pl + x_move][y_pl + y_move] == BOX_ON_BOX_PLACE:
+                continue
+            else:
+                self.move_player(move, False, copy2_map)
+                map_hash = self.get_map_hash(copy2_map)
+                if map_hash not in hashes:
+                    visited.append(move)
+                    hashes.append(map_hash)
+                    if copy2_map[x_pl + x_move][y_pl + y_move] == BOX and copy2_map[x_pl + x_move * 2][
+                        y_pl + y_move * 2] == EMPTY and copy2_map[x_pl + x_move * 3][y_pl + y_move * 3] == WALL:
+                        print('copy2_map[x_pl + x_move][y_pl + y_move]= ', copy2_map[x_pl + x_move][y_pl + y_move])
+                        print('copy2_map[x_pl + x_move * 3][y_pl + y_move * 3]= ',
+                              copy2_map[x_pl + x_move * 3][y_pl + y_move * 3])
+                        print('x= ', x_pl, 'y= ', y_pl, 'x_move= ', x_move, 'y_move= ', y_move, ' -мимо')
+                        continue
+                    elif copy2_map[x_pl + x_move][y_pl + y_move] == BOX_ON_BOX_PLACE:
+                        continue
+                    else:
+                        self.move_player(move, True, copy_map)
+                    if self.is_win(copy_map):
+                        self.view_find_way()
+                        return True
+                    self.find_way(copy_map)
 
 
 class Player:
