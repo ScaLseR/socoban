@@ -172,6 +172,7 @@ class GameMap:
     #просмотр в консоли найденного решения
     @staticmethod
     def view_find_way():
+        print(visited)
         print('Решение найдено, хотите увидеть прохождение карты? y/n?')
         inp = input('')
         if inp == 'y':
@@ -188,44 +189,43 @@ class GameMap:
 
         copy_map = self.game_map_copy(game_map)
         x_pl, y_pl = self.get_coord_player_now(copy_map)
+
         pos_move = self.possible_moves(x_pl, y_pl, copy_map)
-        print('os_move= ', pos_move)
-        # if self.is_win(copy_map):
-        #     self.view_find_way()
-            #return True
-        #else:
         for move in pos_move:
-            print('move= ', move)
             copy2_map = self.game_map_copy(copy_map)
             x_move = KEY_MOVES[move][0]
             y_move = KEY_MOVES[move][1]
-            if copy2_map[x_pl + x_move][y_pl + y_move] == BOX and copy2_map[x_pl + x_move * 2][y_pl + y_move * 2] == EMPTY and copy2_map[x_pl + x_move * 3][y_pl + y_move * 3] == WALL:
-                print('copy2_map[x_pl + x_move][y_pl + y_move]= ', copy2_map[x_pl + x_move][y_pl + y_move])
-                print('copy2_map[x_pl + x_move * 3][y_pl + y_move * 3]= ', copy2_map[x_pl + x_move * 3][y_pl + y_move * 3])
-                print('x= ', x_pl, 'y= ', y_pl, 'x_move= ', x_move, 'y_move= ', y_move, ' -мимо')
+            if copy2_map[x_pl + x_move][y_pl + y_move] == WALL or copy2_map[x_pl + x_move][y_pl + y_move] == BOX_ON_BOX_PLACE:
+                print('стена, ящик на месте', move)
                 continue
-            elif copy2_map[x_pl + x_move][y_pl + y_move] == BOX_ON_BOX_PLACE:
+            elif copy2_map[x_pl][y_pl] == BOX and copy2_map[x_pl + x_move][y_pl + y_move] == EMPTY and \
+                    copy2_map[x_pl + x_move + x_move][y_pl + y_move + y_move] == WALL:
+                print('движение ящика к стене', move)
+                print(x_pl, y_pl)
+                continue
+            elif copy2_map[x_pl + x_move][y_pl + y_move] == BOX and copy2_map[x_pl + x_move * 3][y_pl + y_move * 3] == BOX:
                 continue
             else:
                 self.move_player(move, False, copy2_map)
                 map_hash = self.get_map_hash(copy2_map)
                 if map_hash not in hashes:
-                    visited.append(move)
-                    hashes.append(map_hash)
-                    if copy2_map[x_pl + x_move][y_pl + y_move] == BOX and copy2_map[x_pl + x_move * 2][
-                        y_pl + y_move * 2] == EMPTY and copy2_map[x_pl + x_move * 3][y_pl + y_move * 3] == WALL:
-                        print('copy2_map[x_pl + x_move][y_pl + y_move]= ', copy2_map[x_pl + x_move][y_pl + y_move])
-                        print('copy2_map[x_pl + x_move * 3][y_pl + y_move * 3]= ',
-                              copy2_map[x_pl + x_move * 3][y_pl + y_move * 3])
-                        print('x= ', x_pl, 'y= ', y_pl, 'x_move= ', x_move, 'y_move= ', y_move, ' -мимо')
+                    if copy2_map[x_pl + x_move][y_pl + y_move] == WALL or copy2_map[x_pl + x_move][y_pl + y_move] == BOX_ON_BOX_PLACE:
+                        print('стена, ящик на месте', move)
                         continue
-                    elif copy2_map[x_pl + x_move][y_pl + y_move] == BOX_ON_BOX_PLACE:
+                    elif copy2_map[x_pl][y_pl] == BOX and copy2_map[x_pl + x_move][y_pl + y_move] == EMPTY and \
+                            copy2_map[x_pl + x_move + x_move][y_pl + y_move + y_move] == WALL:
+                        print('движение ящика к стене', move)
+                        print(x_pl, y_pl)
+                        continue
+                    elif copy2_map[x_pl + x_move][y_pl + y_move] == BOX and copy2_map[x_pl + x_move * 3][y_pl + y_move * 3] == BOX:
                         continue
                     else:
+                        visited.append(move)
+                        hashes.append(map_hash)
                         self.move_player(move, True, copy_map)
-                    if self.is_win(copy_map):
-                        self.view_find_way()
-                        return True
+                        if self.is_win(copy_map):
+                            self.view_find_way()
+                            return True
                     self.find_way(copy_map)
 
 
