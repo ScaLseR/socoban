@@ -1,9 +1,7 @@
 from msvcrt import getch
 from copy import deepcopy
-#import sys
 import time
 
-#sys.setrecursionlimit(1000000000)
 BOX = 'B'
 BOX_ON_BOX_PLACE = '*'
 EMPTY = '.'
@@ -185,8 +183,18 @@ class GameMap:
                 return True
         return False
 
+    #просмотр в консоли найденного решения
+    @staticmethod
+    def view_find_way():
+        print('Решение найдено, хотите увидеть прохождение карты? y/n?')
+        inp = input('')
+        if inp == 'y':
+            game.ai_replay(True)
+        elif inp == 'n':
+            exit()
+
     #поиск решения методом BFS
-    def find_way(self, *maps):
+    def find_way(self, *maps) -> bool:
         if len(maps) == 0:
             game_map = self.game_map
         else:
@@ -196,13 +204,13 @@ class GameMap:
         x_pl, y_pl = self.get_coord_player_now(copy_map)
         pos_move = self.possible_moves(x_pl, y_pl, copy_map)
         if self.is_win(copy_map):
+            self.view_find_way()
             return True
         else:
             for move in pos_move:
                 copy2_map = self.game_map_copy(copy_map)
                 x_move = KEY_MOVES[move][0]
                 y_move = KEY_MOVES[move][1]
-                print(x_move, y_move)
                 if copy2_map[x_pl + x_move][y_pl + y_move] == BOX and \
                         copy2_map[x_pl + x_move * 2][y_pl + y_move * 2] == EMPTY and\
                         copy2_map[x_pl + x_move * 3][y_pl + y_move * 3] == WALL:
@@ -213,7 +221,10 @@ class GameMap:
                     if map_hash not in hashes:
                         visited.append(move)
                         hashes.append(map_hash)
-                        self.move_player(move, True, copy_map)
+                        self.move_player(move, False, copy_map)
+                        if self.is_win(copy_map):
+                            self.view_find_way()
+                            return True
                         self.find_way(copy_map)
 
 
@@ -233,12 +244,21 @@ class Player:
 
 class AIPlayer:
     @staticmethod
-    def hod(game_map: GameMap, key_ids: list):
-        for key in key_ids:
-            time.sleep(0.5)
-            game_map.move_player(int(key), True)
-            if game_map.is_win():
-                return True
+    def hod(game_map: GameMap, key_ids: list, vib: bool):
+        #если смотрим повтор прохождения уровня игрока
+        if not vib:
+            for key in key_ids:
+                time.sleep(0.5)
+                game_map.move_player(int(key), True)
+                if game_map.is_win():
+                    return True
+        #если АИ нашел решение и просматриваем его
+        else:
+            while len(visited) != 0:
+                time.sleep(0.5)
+                key = visited.pop(0)
+                game_map.move_player(key, True)
+            exit()
 
 
 class Game:
@@ -250,10 +270,16 @@ class Game:
         self.key_ids.append(key_id)
 
     #получаем карту, и запускаем AI проходить уровень по нашим сохраненным координатам
-    def ai_replay(self):
+    def ai_replay(self, *vib):
+        if len(vib) == 0:
+            key = self.key_ids
+            temp = False
+        else:
+            key = visited
+            temp = True
         game_map = GameMap(self.n)
         pl = AIPlayer()
-        pl.hod(game_map, self.key_ids)
+        pl.hod(game_map, key, temp)
 
     #replay уровня
     def replay(self):
@@ -279,9 +305,8 @@ class Game:
                 print('Вы победили!')
                 game.replay()
         else:
-            pl = AIPlayer()
-            if game_map.find_way():
-                print('Решение найдено!!')
+            game_map.find_way()
+
 
     # обработка ввода правильных буквенных ответов на диалоги
     @staticmethod
