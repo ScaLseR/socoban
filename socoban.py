@@ -229,7 +229,7 @@ class GameMap:
 
 
 class Player:
-
+    #ход игрока человека
     @staticmethod
     def hod(game_map: GameMap):
         while True:
@@ -243,6 +243,7 @@ class Player:
 
 
 class AIPlayer:
+    #ход игрока АИ
     @staticmethod
     def hod(game_map: GameMap, key_ids: list, vib: bool):
         #если смотрим повтор прохождения уровня игрока
