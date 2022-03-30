@@ -98,11 +98,22 @@ class GameMap:
                 if game_map[i][j] == PLAY:
                     return i, j
 
+    #получаем координаты ящиков в данный момент
+    @staticmethod
+    def get_coord_box_now(game_map: list) -> list:
+        box = []
+        for i in range(len(game_map)):
+            for j in range(len(game_map)):
+                if game_map[i][j] == BOX:
+                    box.append([i, j])
+        return box
+
     #получение копии игровой карты
     def game_map_copy(self, *game_map: list) -> list:
         if len(game_map) == 0:
-            game_map = self.game_map
-        copy_map = deepcopy(game_map[0])
+            copy_map = deepcopy(self.game_map)
+        else:
+            copy_map = deepcopy(game_map[0])
         return copy_map
 
     #преобразуем код нажатой кнопки управления(стрелки) в координаты
@@ -191,7 +202,7 @@ class GameMap:
         return node_graph
 
     #определяем если ли вдоль стены место для ящика Х
-    def place_x(self, x: int, y: int) -> bool:
+    def place_x_near_wall(self, x: int, y: int) -> bool:
         for box in self.pl_box:
             if box[0] == x or box[1] == y:
                 return True
@@ -208,11 +219,16 @@ class GameMap:
         elif inp == 'n':
             exit()
 
+    #решаем сокобан с помощью нахождения кратчайших путей
     def use_dsf(self):
         graph = self.build_node_graph()
-        print(graph)
-        way_boxes = self.dfs_find(graph, (5, 2), (3, 5))
-        print(list(way_boxes))
+        game_map = self.game_map_copy()
+        print(game_map)
+        x_pl, y_pl = self.get_coord_player_now(game_map)
+        boxes = self.get_coord_box_now(game_map)
+        print(boxes, x_pl, y_pl)
+        #way_boxes = self.dfs_find(graph, (5, 2), (3, 5))
+        #print(list(way_boxes))
 
     #Поиск кратчайшего расстояния DFS от точки start до goal в графе
     @staticmethod
@@ -241,7 +257,8 @@ class GameMap:
             copy2_map = self.game_map_copy(copy_map)
             x_move = KEY_MOVES[move][0]
             y_move = KEY_MOVES[move][1]
-            if copy2_map[x_pl + x_move][y_pl + y_move] == WALL or copy2_map[x_pl + x_move][y_pl + y_move] == BOX_ON_BOX_PLACE:
+            if copy2_map[x_pl + x_move][y_pl + y_move] == WALL or copy2_map[x_pl + x_move][y_pl + y_move] ==\
+                    BOX_ON_BOX_PLACE:
                 print('стена, ящик на месте', move)
                 continue
             elif copy2_map[x_pl][y_pl] == BOX and copy2_map[x_pl + x_move][y_pl + y_move] == EMPTY and \
@@ -249,13 +266,15 @@ class GameMap:
                 print('движение ящика к стене', move)
                 print(x_pl, y_pl)
                 continue
-            elif copy2_map[x_pl + x_move][y_pl + y_move] == BOX and copy2_map[x_pl + x_move * 3][y_pl + y_move * 3] == BOX:
+            elif copy2_map[x_pl + x_move][y_pl + y_move] == BOX and copy2_map[x_pl + x_move * 3][y_pl + y_move * 3] == \
+                    BOX:
                 continue
             else:
                 self.move_player(move, False, copy2_map)
                 map_hash = self.get_map_hash(copy2_map)
                 if map_hash not in hashes:
-                    if copy2_map[x_pl + x_move][y_pl + y_move] == WALL or copy2_map[x_pl + x_move][y_pl + y_move] == BOX_ON_BOX_PLACE:
+                    if copy2_map[x_pl + x_move][y_pl + y_move] == WALL or copy2_map[x_pl + x_move][y_pl + y_move] == \
+                            BOX_ON_BOX_PLACE:
                         print('стена, ящик на месте', move)
                         continue
                     elif copy2_map[x_pl][y_pl] == BOX and copy2_map[x_pl + x_move][y_pl + y_move] == EMPTY and \
@@ -263,7 +282,8 @@ class GameMap:
                         print('движение ящика к стене', move)
                         print(x_pl, y_pl)
                         continue
-                    elif copy2_map[x_pl + x_move][y_pl + y_move] == BOX and copy2_map[x_pl + x_move * 3][y_pl + y_move * 3] == BOX:
+                    elif copy2_map[x_pl + x_move][y_pl + y_move] == BOX and copy2_map[x_pl + x_move * 3][y_pl + y_move
+                                                                                                         * 3] == BOX:
                         continue
                     else:
                         visited.append(move)
