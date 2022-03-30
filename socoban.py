@@ -135,6 +135,17 @@ class GameMap:
                 moves.append(arrow)
         return moves
 
+    # определение соседних венршин графа
+    def possible_nodes_moves(self, x_old: int, y_old: int, copy_map: list) -> list:
+        moves = []
+        for arrow in list(KEY_MOVES.keys()):
+            x_new, y_new = self.convert_key_to_coord(arrow)
+            if copy_map[x_old + x_new][y_old + y_new] == WALL:
+                continue
+            else:
+                moves.append(arrow)
+        return moves
+
     #получаем Hash нашей карты
     @staticmethod
     def get_map_hash(game_map: list) -> int:
@@ -150,7 +161,7 @@ class GameMap:
         if game_map[x][y] == WALL:
             return True
 
-    #строим граф ходов на игровом поле
+    #строим граф ходов на игровом поле для BFS
     def build_move_graph(self) -> dict:
         copy_map = self.game_map_copy(self.game_map)
         move_graph = {}
@@ -161,6 +172,23 @@ class GameMap:
                     moves = self.possible_moves(i, j, copy_map)
                     move_graph[node] = moves
         return move_graph
+
+    # строим граф вершин на игровом поле для DFS
+    def build_node_graph(self) -> dict:
+        copy_map = self.game_map_copy(self.game_map)
+        node_graph = {}
+        adj_node = []
+        for i in range(len(self.game_map)):
+            for j in range(len(self.game_map)):
+                if not self.is_wall(i, j, copy_map):
+                    node = (i, j)
+                    moves = self.possible_nodes_moves(i, j, copy_map)
+                    for move in moves:
+                        x_new, y_new = self.convert_key_to_coord(move)
+                        adj_node.append((i + x_new, j + y_new))
+                    node_graph[node] = adj_node
+                    adj_node = []
+        return node_graph
 
     #определяем если ли вдоль стены место для ящика Х
     def place_x(self, x: int, y: int) -> bool:
@@ -180,8 +208,26 @@ class GameMap:
         elif inp == 'n':
             exit()
 
+    def use_dsf(self):
+        graph = self.build_node_graph()
+        print(graph)
+        way_boxes = self.dfs_find(graph, (5, 2), (3, 5))
+        print(list(way_boxes))
+
+    #Поиск кратчайшего расстояния DFS от точки start до goal в графе
+    @staticmethod
+    def dfs_find(graph, start, goal):
+        stack = [(start, [start])]
+        while stack:
+            (vertex, path) = stack.pop()
+            for next_node in set(graph[vertex]) - set(path):
+                if next_node == goal:
+                    return path + [next_node]
+                else:
+                    stack.append((next_node, path + [next_node]))
+
     #поиск решения методом BFS
-    def find_way(self, *maps) -> bool:
+    def bsf_find(self, *maps) -> bool:
         if len(maps) == 0:
             game_map = self.game_map
         else:
@@ -226,7 +272,7 @@ class GameMap:
                         if self.is_win(copy_map):
                             self.view_find_way()
                             return True
-                    self.find_way(copy_map)
+                    self.bsf_find(copy_map)
 
 
 class Player:
@@ -307,8 +353,8 @@ class Game:
                 print('Вы победили!')
                 game.replay()
         else:
-            game_map.find_way()
-
+            #game_map.find_way()
+            game_map.use_dsf()
 
     # обработка ввода правильных буквенных ответов на диалоги
     @staticmethod
