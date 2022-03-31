@@ -256,6 +256,7 @@ class GameMap:
                 x_pl, y_pl = self.get_coord_player_now(game_map)
                 way_position = (way_box_to_x[i][0] - way_box_to_x[i+1][0], way_box_to_x[i][1] - way_box_to_x[i+1][1])
                 need_pl_position = (way_box_to_x[i][0] + way_position[0], way_box_to_x[i][1] + way_position[1])
+                print('need_pl_position= ', need_pl_position)
                 if need_pl_position == (x_pl, y_pl):
                     x_pl_new = way_box_to_x[i][0] - x_pl
                     y_pl_new = way_box_to_x[i][1] - y_pl
@@ -265,6 +266,8 @@ class GameMap:
                     i += 1
                 else:
                     pl_detour_box = self.pl_round_box(game_map, (x_pl, y_pl), need_pl_position)
+                    print('pl_detour_box= ', pl_detour_box)
+                    print('x_pl, y_pl = ', x_pl, y_pl)
                     for key in pl_detour_box:
                         self.move_player(key, True, game_map)
                         game.save_hod(key)
@@ -317,14 +320,22 @@ class GameMap:
             #если игрок под ящиком а нужная позиция слева
             elif game_map[pl_pos[0] - 1][pl_pos[1]] == BOX:
                 return[97, 100]
+            #если игрок над ящиком а нужная позиция справа от него
+            elif game_map[pl_pos[0] + 1][pl_pos[1]] == BOX:
+                return[100, 115]
         # если нужная позиция над ящиком а игрок справа от ящика
         if pl_pos[0] > need_pos[0] and pl_pos[1] > need_pos[1]:
-            if game_map[pl_pos[0] - 1][pl_pos[1]] == EMPTY:
+            if game_map[pl_pos[0]][pl_pos[1] - 1] == BOX:
                 return [119, 97]
+
         # если нужная позиция под ящиком а игрок справа от ящика
         if pl_pos[0] < need_pos[0] and pl_pos[1] > need_pos[1]:
-            if game_map[pl_pos[0] + 1][pl_pos[1]] == EMPTY:
+            if game_map[pl_pos[0]][pl_pos[1] - 1] == BOX:
                 return [115, 97]
+            if game_map[pl_pos[0] + 1][pl_pos[1]] == BOX:
+                return [97, 115]
+
+
 
     #поиск кратчайшего расстояния в найденных путях
     def shortest_path(self, graph, start, goal):
