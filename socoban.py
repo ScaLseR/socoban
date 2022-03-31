@@ -223,45 +223,54 @@ class GameMap:
 
     #решаем сокобан с помощью нахождения кратчайших путей
     def use_find(self):
-        #while not self.is_win():
-        way_to_boxes = []
         graph = self.build_node_graph()
         game_map = self.game_map_copy()
-        x_pl, y_pl = self.get_coord_player_now(game_map)
-        boxes = self.get_coord_box_now(game_map)
-        for box in boxes:
-            way_to_boxes.append(self.shortest_path(graph, (x_pl, y_pl), box)[1:])
-        sorted(way_to_boxes, key=len)
-
-        for move_coord in way_to_boxes[0]:
-            box_coord = way_to_boxes[0][-1:]
-            if move_coord == box_coord[0]:
-                break
-            else:
-                x_pl, y_pl = self.get_coord_player_now(game_map)
-                x_pl_new = move_coord[0] - x_pl
-                y_pl_new = move_coord[1] - y_pl
-                key = MOVES[(x_pl_new, y_pl_new)]
-                self.move_player(key, True, game_map)
-                game.save_hod(key)
-        way_box_to_x = self.shortest_path(graph, box_coord[0], tuple(self.pl_box[0]))
-        i = 0
-        while True:
+        n = 0
+        while not self.is_win():
+            way_to_boxes = []
+            boxes = self.get_coord_box_now(game_map)
             x_pl, y_pl = self.get_coord_player_now(game_map)
-            way_position = (way_box_to_x[i][0] - way_box_to_x[i+1][0], way_box_to_x[i][1] - way_box_to_x[i+1][1])
-            need_pl_position = (way_box_to_x[i][0] + way_position[0], way_box_to_x[i][1] + way_position[1])
-            if need_pl_position == (x_pl, y_pl):
-                x_pl_new = way_box_to_x[i][0] - x_pl
-                y_pl_new = way_box_to_x[i][1] - y_pl
-                key = MOVES[(x_pl_new, y_pl_new)]
-                self.move_player(key, True, game_map)
-                game.save_hod(key)
-                i += 1
-            else:
-                pl_detour_box = self.pl_round_box(game_map, (x_pl, y_pl), need_pl_position)
-                for key in pl_detour_box:
+            #определение путей до ящиков
+            for box in boxes:
+                way_to_boxes.append(self.shortest_path(graph, (x_pl, y_pl), box)[1:])
+            print('way_to_boxes = ', way_to_boxes)
+            for move_coord in way_to_boxes[0]:
+                print('move_coord= ', move_coord)
+                box_coord = way_to_boxes[0][-1:]
+                print('box_coord= ', box_coord)
+                if move_coord == box_coord[0]:
+                    break
+                else:
+                    x_pl, y_pl = self.get_coord_player_now(game_map)
+                    x_pl_new = move_coord[0] - x_pl
+                    y_pl_new = move_coord[1] - y_pl
+                    key = MOVES[(x_pl_new, y_pl_new)]
                     self.move_player(key, True, game_map)
                     game.save_hod(key)
+                    box_now = box_coord.pop(0)
+                    print('box_now= ', box_now)
+            way_box_to_x = self.shortest_path(graph, box_now, tuple(self.pl_box[n]))
+            print('way_box_to_x= ', way_box_to_x)
+            i = 0
+            while i < (len(way_to_boxes[0]) - 1):
+                x_pl, y_pl = self.get_coord_player_now(game_map)
+                way_position = (way_box_to_x[i][0] - way_box_to_x[i+1][0], way_box_to_x[i][1] - way_box_to_x[i+1][1])
+                need_pl_position = (way_box_to_x[i][0] + way_position[0], way_box_to_x[i][1] + way_position[1])
+                if need_pl_position == (x_pl, y_pl):
+                    x_pl_new = way_box_to_x[i][0] - x_pl
+                    y_pl_new = way_box_to_x[i][1] - y_pl
+                    key = MOVES[(x_pl_new, y_pl_new)]
+                    self.move_player(key, True, game_map)
+                    game.save_hod(key)
+                    i += 1
+                else:
+                    pl_detour_box = self.pl_round_box(game_map, (x_pl, y_pl), need_pl_position)
+                    for key in pl_detour_box:
+                        self.move_player(key, True, game_map)
+                        game.save_hod(key)
+                if self.is_win(game_map):
+                    return True
+            n += 1
 
     #перевод игрока в нужную позицию для перемещения ящика(обход ящика вокруг)
     @staticmethod
@@ -294,8 +303,28 @@ class GameMap:
                 return [100, 115, 115, 97]
             else:
                 return [97, 115, 115, 100]
-
-
+        #если нужная позиция над ящиком а игрок слева от ящика
+        if pl_pos[0] > need_pos[0] and pl_pos[1] < need_pos[1]:
+            if game_map[pl_pos[0]][pl_pos[1] + 1] == BOX:
+                return [119, 100]
+            #если игрок под ящиком а нужная позиция справа
+            elif game_map[pl_pos[0] - 1][pl_pos[1]] == BOX:
+                return [100, 119]
+        # если нужная позиция под ящиком а игрок слева от ящика
+        if pl_pos[0] < need_pos[0] and pl_pos[1] < need_pos[1]:
+            if game_map[pl_pos[0]][pl_pos[1] + 1] == BOX:
+                return [115, 100]
+            #если игрок под ящиком а нужная позиция слева
+            elif game_map[pl_pos[0] - 1][pl_pos[1]] == BOX:
+                return[97, 100]
+        # если нужная позиция над ящиком а игрок справа от ящика
+        if pl_pos[0] > need_pos[0] and pl_pos[1] > need_pos[1]:
+            if game_map[pl_pos[0] - 1][pl_pos[1]] == EMPTY:
+                return [119, 97]
+        # если нужная позиция под ящиком а игрок справа от ящика
+        if pl_pos[0] < need_pos[0] and pl_pos[1] > need_pos[1]:
+            if game_map[pl_pos[0] + 1][pl_pos[1]] == EMPTY:
+                return [115, 97]
 
     #поиск кратчайшего расстояния в найденных путях
     def shortest_path(self, graph, start, goal):
@@ -450,10 +479,14 @@ class Game:
             pl = Player()
             if pl.hod(game_map):
                 print('Вы победили!')
-                game.replay()
+                self.replay()
         else:
-            #game_map.find_way()
-            game_map.use_find()
+            if game_map.use_find():
+                ent = input('Решение найдено, желаете посмотреть? y/n')
+                if ent == 'y':
+                    self.ai_replay()
+                else:
+                    exit()
 
     # обработка ввода правильных буквенных ответов на диалоги
     @staticmethod
