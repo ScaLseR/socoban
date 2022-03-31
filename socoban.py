@@ -1,5 +1,6 @@
 from msvcrt import getch
 from copy import deepcopy
+from collections import deque
 import time
 
 BOX = 'B'
@@ -9,6 +10,7 @@ PLAY = '@'
 BOX_PLACE = 'X'
 WALL = '#'
 KEY_MOVES = {119: [-1, 0], 100: [0, 1], 115: [1, 0], 97: [0, -1]}
+MOVES = {(-1, 0): 119, (0, 1): 100, (1, 0): 115, (0, -1): 97}
 # W - 119 -> Up | D - 100  -> Right | S - 115 -> Down | A - 97 -> Left
 visited = []
 hashes = []
@@ -105,7 +107,7 @@ class GameMap:
         for i in range(len(game_map)):
             for j in range(len(game_map)):
                 if game_map[i][j] == BOX:
-                    box.append([i, j])
+                    box.append((i, j))
         return box
 
     #получение копии игровой карты
@@ -220,19 +222,70 @@ class GameMap:
             exit()
 
     #решаем сокобан с помощью нахождения кратчайших путей
-    def use_dsf(self):
+    def use_find(self):
+        #while not self.is_win():
+        way_to_boxes = []
         graph = self.build_node_graph()
         game_map = self.game_map_copy()
-        print(game_map)
         x_pl, y_pl = self.get_coord_player_now(game_map)
         boxes = self.get_coord_box_now(game_map)
-        print(boxes, x_pl, y_pl)
-        #way_boxes = self.dfs_find(graph, (5, 2), (3, 5))
-        #print(list(way_boxes))
+        for box in boxes:
+            way_to_boxes.append(self.shortest_path(graph, (x_pl, y_pl), box)[1:])
+        sorted(way_to_boxes, key=len)
 
-    #Поиск кратчайшего расстояния DFS от точки start до goal в графе
+        for move_coord in way_to_boxes[0]:
+            box_coord = way_to_boxes[0][-1:]
+            if move_coord == box_coord[0]:
+                break
+            else:
+                x_pl, y_pl = self.get_coord_player_now(game_map)
+                x_pl_new = move_coord[0] - x_pl
+                y_pl_new = move_coord[1] - y_pl
+                key = MOVES[(x_pl_new, y_pl_new)]
+                self.move_player(key, True, game_map)
+                game.save_hod(key)
+        way_box_to_x = self.shortest_path(graph, box_coord[0], tuple(self.pl_box[0]))
+        i = 0
+        while True:
+            x_pl, y_pl = self.get_coord_player_now(game_map)
+            way_position = (way_box_to_x[i][0] - way_box_to_x[i+1][0], way_box_to_x[i][1] - way_box_to_x[i+1][1])
+            print(way_box_to_x)
+            print('way_box_to_x[i]= ', way_box_to_x[i])
+            print('way_position= ', way_position)
+            need_pl_position = (way_box_to_x[i][0] + way_position[0], way_box_to_x[i][1] + way_position[1])
+            print('need_pl_position= ', need_pl_position)
+            print('x_pl, y_pl = ', x_pl, y_pl)
+            if need_pl_position == (x_pl, y_pl):
+                print('x_pl, y_pl = ', x_pl, y_pl)
+                x_pl_new = way_box_to_x[i][0] - x_pl
+                y_pl_new = way_box_to_x[i][1] - y_pl
+                print('x,y_pl_new= ', x_pl_new, y_pl_new)
+                key = MOVES[(x_pl_new, y_pl_new)]
+                print('key= ', key)
+                self.move_player(key, True, game_map)
+                game.save_hod(key)
+                i += 1
+            else:
+                detour_box = self.dfs_finds(graph, (x_pl, y_pl), need_pl_position)
+                for move_coord in detour_box[1:]:
+                    x_pl, y_pl = self.get_coord_player_now(game_map)
+                    x_pl_new = move_coord[0] - x_pl
+                    y_pl_new = move_coord[1] - y_pl
+                    key = MOVES[(x_pl_new, y_pl_new)]
+                    print(key)
+                    self.move_player(key, True, game_map)
+                    game.save_hod(key)
+
+
+    #поиск кратчайшего расстояния в найденных путях
+    def shortest_path(self, graph, start, goal):
+        way_to_box = list(self.bfs_finds(graph, start, goal))
+        sorted(way_to_box, key=len)
+        return way_to_box[0]
+
+    #Поиск возможных путей от точки start до goal в графе - поиск DFS
     @staticmethod
-    def dfs_find(graph, start, goal):
+    def dfs_finds(graph, start, goal):
         stack = [(start, [start])]
         while stack:
             (vertex, path) = stack.pop()
@@ -241,6 +294,18 @@ class GameMap:
                     return path + [next_node]
                 else:
                     stack.append((next_node, path + [next_node]))
+
+    # Поиск возможных путей от точки start до goal в графе - поиск BFS
+    @staticmethod
+    def bfs_finds(graph, start, goal):
+        queue = deque([(start, [start])])
+        while queue:
+            (vertex, path) = queue.pop()
+            for next_node in set(graph[vertex]) - set(path):
+                if next_node == goal:
+                    yield path + [next_node]
+                else:
+                    queue.appendleft((next_node, path + [next_node]))
 
     #поиск решения методом BFS
     def bsf_find(self, *maps) -> bool:
@@ -259,12 +324,9 @@ class GameMap:
             y_move = KEY_MOVES[move][1]
             if copy2_map[x_pl + x_move][y_pl + y_move] == WALL or copy2_map[x_pl + x_move][y_pl + y_move] ==\
                     BOX_ON_BOX_PLACE:
-                print('стена, ящик на месте', move)
                 continue
             elif copy2_map[x_pl][y_pl] == BOX and copy2_map[x_pl + x_move][y_pl + y_move] == EMPTY and \
                     copy2_map[x_pl + x_move + x_move][y_pl + y_move + y_move] == WALL:
-                print('движение ящика к стене', move)
-                print(x_pl, y_pl)
                 continue
             elif copy2_map[x_pl + x_move][y_pl + y_move] == BOX and copy2_map[x_pl + x_move * 3][y_pl + y_move * 3] == \
                     BOX:
@@ -275,12 +337,9 @@ class GameMap:
                 if map_hash not in hashes:
                     if copy2_map[x_pl + x_move][y_pl + y_move] == WALL or copy2_map[x_pl + x_move][y_pl + y_move] == \
                             BOX_ON_BOX_PLACE:
-                        print('стена, ящик на месте', move)
                         continue
                     elif copy2_map[x_pl][y_pl] == BOX and copy2_map[x_pl + x_move][y_pl + y_move] == EMPTY and \
                             copy2_map[x_pl + x_move + x_move][y_pl + y_move + y_move] == WALL:
-                        print('движение ящика к стене', move)
-                        print(x_pl, y_pl)
                         continue
                     elif copy2_map[x_pl + x_move][y_pl + y_move] == BOX and copy2_map[x_pl + x_move * 3][y_pl + y_move
                                                                                                          * 3] == BOX:
@@ -374,7 +433,7 @@ class Game:
                 game.replay()
         else:
             #game_map.find_way()
-            game_map.use_dsf()
+            game_map.use_find()
 
     # обработка ввода правильных буквенных ответов на диалоги
     @staticmethod
