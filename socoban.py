@@ -249,32 +249,52 @@ class GameMap:
         while True:
             x_pl, y_pl = self.get_coord_player_now(game_map)
             way_position = (way_box_to_x[i][0] - way_box_to_x[i+1][0], way_box_to_x[i][1] - way_box_to_x[i+1][1])
-            print(way_box_to_x)
-            print('way_box_to_x[i]= ', way_box_to_x[i])
-            print('way_position= ', way_position)
             need_pl_position = (way_box_to_x[i][0] + way_position[0], way_box_to_x[i][1] + way_position[1])
-            print('need_pl_position= ', need_pl_position)
-            print('x_pl, y_pl = ', x_pl, y_pl)
             if need_pl_position == (x_pl, y_pl):
-                print('x_pl, y_pl = ', x_pl, y_pl)
                 x_pl_new = way_box_to_x[i][0] - x_pl
                 y_pl_new = way_box_to_x[i][1] - y_pl
-                print('x,y_pl_new= ', x_pl_new, y_pl_new)
                 key = MOVES[(x_pl_new, y_pl_new)]
-                print('key= ', key)
                 self.move_player(key, True, game_map)
                 game.save_hod(key)
                 i += 1
             else:
-                detour_box = self.dfs_finds(graph, (x_pl, y_pl), need_pl_position)
-                for move_coord in detour_box[1:]:
-                    x_pl, y_pl = self.get_coord_player_now(game_map)
-                    x_pl_new = move_coord[0] - x_pl
-                    y_pl_new = move_coord[1] - y_pl
-                    key = MOVES[(x_pl_new, y_pl_new)]
-                    print(key)
+                pl_detour_box = self.pl_round_box(game_map, (x_pl, y_pl), need_pl_position)
+                for key in pl_detour_box:
                     self.move_player(key, True, game_map)
                     game.save_hod(key)
+
+    #перевод игрока в нужную позицию для перемещения ящика(обход ящика вокруг)
+    @staticmethod
+    def pl_round_box(game_map, pl_pos: tuple, need_pos: tuple) -> list:
+        #если нужная позиция  @_BOX_need_pos
+        if pl_pos[0] == need_pos[0] and pl_pos[1] < need_pos[1]:
+            if game_map[pl_pos[0] + 1][pl_pos[0]] == EMPTY and game_map[pl_pos[0] + 1][pl_pos[0] + 1] == EMPTY and \
+                    game_map[pl_pos[0] + 1][pl_pos[0] + 2] == EMPTY:
+                return [115, 100, 100, 119]
+            else:
+                return [119, 100, 100, 115]
+        #если нужная позиция need_pos_BOX_@
+        if pl_pos[0] == need_pos[0] and pl_pos[1] > need_pos[1]:
+            if game_map[pl_pos[0] - 1][pl_pos[0]] == EMPTY and game_map[pl_pos[0] - 1][pl_pos[0] - 1] == EMPTY and \
+                    game_map[pl_pos[0] - 1][pl_pos[0] - 2] == EMPTY:
+                return [115, 97, 97, 119]
+            else:
+                return [119, 97, 97, 115]
+        #если нужная позиция над ящиком а игрок под ним
+        if pl_pos[0] > need_pos[0] and pl_pos[1] == need_pos[1]:
+            if game_map[pl_pos[0]][pl_pos[0] + 1] == EMPTY and game_map[pl_pos[0] - 1][pl_pos[0] + 1] == EMPTY and \
+                    game_map[pl_pos[0] - 2][pl_pos[0] + 1] == EMPTY:
+                return [100, 119, 119, 97]
+            else:
+                return [97, 119, 119, 100]
+        #если нужная позиция под ящиком а игрок над ним
+        if pl_pos[0] < need_pos[0] and pl_pos[1] == need_pos[1]:
+            if game_map[pl_pos[0]][pl_pos[0] + 1] == EMPTY and game_map[pl_pos[0] + 1][pl_pos[0] + 1] == EMPTY and \
+                    game_map[pl_pos[0] + 2][pl_pos[0] + 1] == EMPTY:
+                return [100, 115, 115, 97]
+            else:
+                return [97, 115, 115, 100]
+
 
 
     #поиск кратчайшего расстояния в найденных путях
