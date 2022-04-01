@@ -279,11 +279,12 @@ class GameMap:
                     self.move_player(key, False, game_map)
                     game.save_hod(key)
                     i += 1
-                #ставим игрока в нужную позицию для толкания ящика
-                pl_detour_box = self.pl_round_box(game_map, (x_pl, y_pl), need_pl_position)
-                for key in pl_detour_box:
-                    self.move_player(key, False, game_map)
-                    game.save_hod(key)
+                else:
+                    #ставим игрока в нужную позицию для толкания ящика
+                    pl_detour_box = self.pl_round_box(game_map, (x_pl, y_pl), need_pl_position)
+                    for key in pl_detour_box:
+                        self.move_player(key, False, game_map)
+                        game.save_hod(key)
                 if self.is_win(game_map):
                     return True
             n += 1
