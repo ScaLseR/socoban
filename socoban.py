@@ -232,6 +232,7 @@ class GameMap:
             #определение путей до ящиков
             for box in boxes:
                 way_to_boxes.append(self.shortest_path(graph, (x_pl, y_pl), box)[1:])
+            #передвижения игрока к ящику
             for move_coord in way_to_boxes[0]:
                 box_coord = way_to_boxes[0][-1:]
                 if move_coord == box_coord[0]:
@@ -247,10 +248,12 @@ class GameMap:
             pl_box = tuple(self.pl_box[n])
             way_box_to_x = self.shortest_path(graph, box_now, pl_box)
             i = 0
+            #передвижение ящика к месту Х
             while i < (len(way_box_to_x) - 1):
                 x_pl, y_pl = self.get_coord_player_now(game_map)
                 way_position = (way_box_to_x[i][0] - way_box_to_x[i+1][0], way_box_to_x[i][1] - way_box_to_x[i+1][1])
                 need_pl_position = (way_box_to_x[i][0] + way_position[0], way_box_to_x[i][1] + way_position[1])
+                #если игрок на неоходимой позиции, чтобы толкнуть ящик. толкаем ящик вперед
                 if need_pl_position == (x_pl, y_pl):
                     x_pl_new = way_box_to_x[i][0] - x_pl
                     y_pl_new = way_box_to_x[i][1] - y_pl
@@ -259,6 +262,7 @@ class GameMap:
                     game.save_hod(key)
                     i += 1
                 else:
+                    #ставим игрока в нужную позицию для толкания ящика
                     pl_detour_box = self.pl_round_box(game_map, (x_pl, y_pl), need_pl_position)
                     for key in pl_detour_box:
                         self.move_player(key, False, game_map)
@@ -326,8 +330,6 @@ class GameMap:
                 return [115, 97]
             if game_map[pl_pos[0] + 1][pl_pos[1]] == BOX:
                 return [97, 115]
-
-
 
     #поиск кратчайшего расстояния в найденных путях
     def shortest_path(self, graph, start, goal):
