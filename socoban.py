@@ -21,14 +21,14 @@ hashes = []
 
 class GameMap:
     """Загрузка карты и обработка """
-    def __init__(self, n: int):
+    def __init__(self, n_level: int):
         """Инициализация"""
         self.game_map = []
-        self.n = n
+        self.n_level = n_level
         self.pl_box = []
         self.box = []
         #получаем карту из выбранного файла
-        with open(f'./{n}.txt', 'r', encoding="utf-8") as file:
+        with open(f'./{n_level}.txt', 'r', encoding="utf-8") as file:
             for line in file:
                 s_line = list(line)
                 self.game_map.append(s_line[:-1])
@@ -136,12 +136,12 @@ class GameMap:
         x_y = KEY_MOVES.get(key, 100)
         if x_y == 100:
             print('Управление происходит кнопками: W - UP, S - DOWN, A - LEFT, D - RIGHT.')
-            x = 0
-            y = 0
+            x_coord = 0
+            y_coord = 0
         else:
-            x = x_y[0]
-            y = x_y[1]
-        return x, y
+            x_coord = x_y[0]
+            y_coord = x_y[1]
+        return x_coord, y_coord
 
     #определение возможности хода в 4 направлениях
     def possible_moves(self, x_old: int, y_old: int, copy_map: list) -> list:
@@ -183,9 +183,9 @@ class GameMap:
 
     #определяем расположена ли стена по координатам
     @staticmethod
-    def is_wall(x: int, y: int, game_map: list) -> bool:
+    def is_wall(x_coord: int, y_coord: int, game_map: list) -> bool:
         """определяем расположена ли стена по координатам"""
-        if game_map[x][y] == WALL:
+        if game_map[x_coord][y_coord] == WALL:
             return True
 
     #строим граф ходов на игровом поле для BFS
@@ -220,10 +220,10 @@ class GameMap:
         return node_graph
 
     #определяем если ли вдоль стены место для ящика Х
-    def place_x_near_wall(self, x: int, y: int) -> bool:
+    def place_x_near_wall(self, x_coord: int, y_coord: int) -> bool:
         """определяем если ли вдоль стены место для ящика Х"""
         for box in self.pl_box:
-            if box[0] == x or box[1] == y:
+            if box[0] == x_coord or box[1] == y_coord:
                 return True
         return False
 
@@ -243,7 +243,7 @@ class GameMap:
         """решаем сокобан с помощью нахождения кратчайших путей"""
         graph = self.build_node_graph()
         game_map = self.game_map_copy()
-        n = 0
+        n_box = 0
         while not self.is_win(game_map):
             way_to_boxes = []
             boxes = self.get_coord_box_now(game_map)
@@ -263,7 +263,7 @@ class GameMap:
                 self.move_player(key, False, game_map)
                 game.save_hod(key)
             box_now = box_coord.pop(0)
-            pl_box = tuple(self.pl_box[n])
+            pl_box = tuple(self.pl_box[n_box])
             way_box_to_x = self.shortest_path(graph, box_now, pl_box)
             i = 0
             #передвижение ящика к месту Х
@@ -287,7 +287,7 @@ class GameMap:
                         game.save_hod(key)
                 if self.is_win(game_map):
                     return True
-            n += 1
+            n_box += 1
 
     #перевод игрока в нужную позицию для перемещения ящика(обход ящика вокруг)
     @staticmethod
@@ -465,7 +465,7 @@ class AIPlayer:
 class Game:
     """Класс Игры"""
     key_ids = []
-    n = 0
+    n_level = 0
 
     # запись ходов в список для replay уровня
     def save_hod(self, key_id: int):
@@ -481,9 +481,9 @@ class Game:
         else:
             key = visited
             temp = True
-        game_map = GameMap(self.n)
-        pl = AIPlayer()
-        pl.hod(game_map, key, temp)
+        game_map = GameMap(self.n_level)
+        plr = AIPlayer()
+        plr.hod(game_map, key, temp)
 
     #replay уровня
     def replay(self):
@@ -499,14 +499,14 @@ class Game:
         """настройки игры"""
         print('Добро пожаловать в игру Socoban! Цель установить ящики - B, на специальные места - Х. '
               '\n Управление происходит стрелками на клавиатуре. (Выход из игры клавиша - ESC)')
-        self.n = self.valid_input_dig('Выберите уровень игры: число от 1 до 5 - ')
+        self.n_level = self.valid_input_dig('Выберите уровень игры: число от 1 до 5 - ')
         otv = self.valid_input_let('Хотите играть сами - выберите "y", пусть играет ИИ - выберите "n". '
                                    'Введите ', 'y', 'n')
-        game_map = GameMap(self.n)
+        game_map = GameMap(self.n_level)
         game_map.view_board()
         if otv == 'y':
-            pl = Player()
-            if pl.hod(game_map):
+            plr = Player()
+            if plr.hod(game_map):
                 print('Вы победили!')
                 self.replay()
         else:
@@ -522,7 +522,7 @@ class Game:
         """обработка ввода правильных буквенных ответов на диалоги"""
         while True:
             enter = input(text + '"' + zn1 + '" или "' + zn2 + '": ')
-            if enter.isalpha() and (enter == zn1 or enter == zn2):
+            if enter.isalpha() and enter in (zn1, zn2):
                 return enter
             print('Введите ' + '"' + zn1 + '" или "' + zn2 + '"!')
 
