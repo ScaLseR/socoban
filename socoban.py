@@ -1,3 +1,6 @@
+"""
+Game Socoban
+"""
 from msvcrt import getch
 from copy import deepcopy
 from collections import deque
@@ -17,13 +20,15 @@ hashes = []
 
 
 class GameMap:
+    """Загрузка карты и обработка """
     def __init__(self, n: int):
+        """Инициализация"""
         self.game_map = []
         self.n = n
         self.pl_box = []
         self.box = []
         #получаем карту из выбранного файла
-        with open(f'./{n}.txt', 'r') as file:
+        with open(f'./{n}.txt', 'r', encoding="utf-8") as file:
             for line in file:
                 s_line = list(line)
                 self.game_map.append(s_line[:-1])
@@ -35,6 +40,7 @@ class GameMap:
 
     #отображение игровой карты в консоли
     def view_board(self, *g_map: list):
+        """отображение игровой карты в консоли"""
         if len(g_map) == 0:
             g_map = self.game_map
         else:
@@ -47,6 +53,7 @@ class GameMap:
 
     #проверяем победный ход или нет
     def is_win(self, *game_map: list) -> bool:
+        """проверяем победный ход или нет"""
         if len(game_map) == 0:
             game_map = self.game_map
         else:
@@ -61,6 +68,7 @@ class GameMap:
 
     #перемещение персонажа - @ - W A S D
     def move_player(self, key: int, view: bool, *g_map: list):
+        """перемещение персонажа - @ - W A S D"""
         if len(g_map) == 0:
             g_map = self.game_map
         else:
@@ -95,6 +103,7 @@ class GameMap:
     #получаем координаты игрока в данный момент
     @staticmethod
     def get_coord_player_now(game_map: list) -> tuple:
+        """получаем координаты игрока в данный момент"""
         for i in range(len(game_map)):
             for j in range(len(game_map)):
                 if game_map[i][j] == PLAY:
@@ -103,6 +112,7 @@ class GameMap:
     #получаем координаты ящиков в данный момент
     @staticmethod
     def get_coord_box_now(game_map: list) -> list:
+        """получаем координаты ящиков в данный момент"""
         box = []
         for i in range(len(game_map)):
             for j in range(len(game_map)):
@@ -112,6 +122,7 @@ class GameMap:
 
     #получение копии игровой карты
     def game_map_copy(self, *game_map: list) -> list:
+        """получение копии игровой карты"""
         if len(game_map) == 0:
             copy_map = deepcopy(self.game_map)
         else:
@@ -121,6 +132,7 @@ class GameMap:
     #преобразуем код нажатой кнопки управления(стрелки) в координаты
     @staticmethod
     def convert_key_to_coord(key: int) -> tuple:
+        """преобразуем код нажатой кнопки управления(стрелки) в координаты"""
         x_y = KEY_MOVES.get(key, 100)
         if x_y == 100:
             print('Управление происходит кнопками: W - UP, S - DOWN, A - LEFT, D - RIGHT.')
@@ -133,6 +145,7 @@ class GameMap:
 
     #определение возможности хода в 4 направлениях
     def possible_moves(self, x_old: int, y_old: int, copy_map: list) -> list:
+        """определение возможности хода в 4 направлениях"""
         moves = []
         for arrow in list(KEY_MOVES.keys()):
             x_new, y_new = self.convert_key_to_coord(arrow)
@@ -144,24 +157,24 @@ class GameMap:
                     (copy_map[x_old + x_new][y_old + y_new] == BOX_ON_BOX_PLACE and
                      copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == EMPTY):
                 continue
-            else:
-                moves.append(arrow)
+            moves.append(arrow)
         return moves
 
     # определение соседних венршин графа
     def possible_nodes_moves(self, x_old: int, y_old: int, copy_map: list) -> list:
+        """определение соседних венршин графа"""
         moves = []
         for arrow in list(KEY_MOVES.keys()):
             x_new, y_new = self.convert_key_to_coord(arrow)
             if copy_map[x_old + x_new][y_old + y_new] == WALL:
                 continue
-            else:
-                moves.append(arrow)
+            moves.append(arrow)
         return moves
 
     #получаем Hash нашей карты
     @staticmethod
     def get_map_hash(game_map: list) -> int:
+        """получаем Hash нашей карты"""
         game_map_tuple = ()
         for i in range(len(game_map)):
             game_map_tuple = game_map_tuple + tuple(game_map[i])
@@ -171,11 +184,13 @@ class GameMap:
     #определяем расположена ли стена по координатам
     @staticmethod
     def is_wall(x: int, y: int, game_map: list) -> bool:
+        """определяем расположена ли стена по координатам"""
         if game_map[x][y] == WALL:
             return True
 
     #строим граф ходов на игровом поле для BFS
     def build_move_graph(self) -> dict:
+        """строим граф ходов на игровом поле для BFS"""
         copy_map = self.game_map_copy(self.game_map)
         move_graph = {}
         for i in range(len(self.game_map)):
@@ -188,6 +203,7 @@ class GameMap:
 
     # строим граф вершин на игровом поле для DFS
     def build_node_graph(self) -> dict:
+        """строим граф вершин на игровом поле для DFS"""
         copy_map = self.game_map_copy(self.game_map)
         node_graph = {}
         adj_node = []
@@ -205,6 +221,7 @@ class GameMap:
 
     #определяем если ли вдоль стены место для ящика Х
     def place_x_near_wall(self, x: int, y: int) -> bool:
+        """определяем если ли вдоль стены место для ящика Х"""
         for box in self.pl_box:
             if box[0] == x or box[1] == y:
                 return True
@@ -213,6 +230,7 @@ class GameMap:
     #просмотр в консоли найденного решения
     @staticmethod
     def view_find_way():
+        """просмотр в консоли найденного решения"""
         print('Решение найдено, хотите увидеть прохождение карты? y/n?')
         inp = input('')
         if inp == 'y':
@@ -222,6 +240,7 @@ class GameMap:
 
     #решаем сокобан с помощью нахождения кратчайших путей
     def use_find(self):
+        """решаем сокобан с помощью нахождения кратчайших путей"""
         graph = self.build_node_graph()
         game_map = self.game_map_copy()
         n = 0
@@ -237,13 +256,12 @@ class GameMap:
                 box_coord = way_to_boxes[0][-1:]
                 if move_coord == box_coord[0]:
                     break
-                else:
-                    x_pl, y_pl = self.get_coord_player_now(game_map)
-                    x_pl_new = move_coord[0] - x_pl
-                    y_pl_new = move_coord[1] - y_pl
-                    key = MOVES[(x_pl_new, y_pl_new)]
-                    self.move_player(key, False, game_map)
-                    game.save_hod(key)
+                x_pl, y_pl = self.get_coord_player_now(game_map)
+                x_pl_new = move_coord[0] - x_pl
+                y_pl_new = move_coord[1] - y_pl
+                key = MOVES[(x_pl_new, y_pl_new)]
+                self.move_player(key, False, game_map)
+                game.save_hod(key)
             box_now = box_coord.pop(0)
             pl_box = tuple(self.pl_box[n])
             way_box_to_x = self.shortest_path(graph, box_now, pl_box)
@@ -261,12 +279,11 @@ class GameMap:
                     self.move_player(key, False, game_map)
                     game.save_hod(key)
                     i += 1
-                else:
-                    #ставим игрока в нужную позицию для толкания ящика
-                    pl_detour_box = self.pl_round_box(game_map, (x_pl, y_pl), need_pl_position)
-                    for key in pl_detour_box:
-                        self.move_player(key, False, game_map)
-                        game.save_hod(key)
+                #ставим игрока в нужную позицию для толкания ящика
+                pl_detour_box = self.pl_round_box(game_map, (x_pl, y_pl), need_pl_position)
+                for key in pl_detour_box:
+                    self.move_player(key, False, game_map)
+                    game.save_hod(key)
                 if self.is_win(game_map):
                     return True
             n += 1
@@ -274,50 +291,47 @@ class GameMap:
     #перевод игрока в нужную позицию для перемещения ящика(обход ящика вокруг)
     @staticmethod
     def pl_round_box(game_map, pl_pos: tuple, need_pos: tuple) -> list:
+        """перевод игрока в нужную позицию для перемещения ящика(обход ящика вокруг)"""
         #если нужная позиция  @_BOX_need_pos
         if pl_pos[0] == need_pos[0] and pl_pos[1] < need_pos[1]:
             if game_map[pl_pos[0] + 1][pl_pos[0]] == EMPTY and game_map[pl_pos[0] + 1][pl_pos[0] + 1] == EMPTY and \
                     game_map[pl_pos[0] + 1][pl_pos[0] + 2] == EMPTY:
                 return [115, 100, 100, 119]
-            else:
-                return [119, 100, 100, 115]
+            return [119, 100, 100, 115]
         #если нужная позиция need_pos_BOX_@
         if pl_pos[0] == need_pos[0] and pl_pos[1] > need_pos[1]:
             if game_map[pl_pos[0] - 1][pl_pos[0]] == EMPTY and game_map[pl_pos[0] - 1][pl_pos[0] - 1] == EMPTY and \
                     game_map[pl_pos[0] - 1][pl_pos[0] - 2] == EMPTY:
                 return [115, 97, 97, 119]
-            else:
-                return [119, 97, 97, 115]
+            return [119, 97, 97, 115]
         #если нужная позиция над ящиком а игрок под ним
         if pl_pos[0] > need_pos[0] and pl_pos[1] == need_pos[1]:
             if game_map[pl_pos[0]][pl_pos[0] + 1] == EMPTY and game_map[pl_pos[0] - 1][pl_pos[0] + 1] == EMPTY and \
                     game_map[pl_pos[0] - 2][pl_pos[0] + 1] == EMPTY:
                 return [100, 119, 119, 97]
-            else:
-                return [97, 119, 119, 100]
+            return [97, 119, 119, 100]
         #если нужная позиция под ящиком а игрок над ним
         if pl_pos[0] < need_pos[0] and pl_pos[1] == need_pos[1]:
             if game_map[pl_pos[0]][pl_pos[0] + 1] == EMPTY and game_map[pl_pos[0] + 1][pl_pos[0] + 1] == EMPTY and \
                     game_map[pl_pos[0] + 2][pl_pos[0] + 1] == EMPTY:
                 return [100, 115, 115, 97]
-            else:
-                return [97, 115, 115, 100]
+            return [97, 115, 115, 100]
         #если нужная позиция над ящиком а игрок слева от ящика
         if pl_pos[0] > need_pos[0] and pl_pos[1] < need_pos[1]:
             if game_map[pl_pos[0]][pl_pos[1] + 1] == BOX:
                 return [119, 100]
             #если игрок под ящиком а нужная позиция справа
-            elif game_map[pl_pos[0] - 1][pl_pos[1]] == BOX:
+            if game_map[pl_pos[0] - 1][pl_pos[1]] == BOX:
                 return [100, 119]
         # если нужная позиция под ящиком а игрок слева от ящика
         if pl_pos[0] < need_pos[0] and pl_pos[1] < need_pos[1]:
             if game_map[pl_pos[0]][pl_pos[1] + 1] == BOX:
                 return [115, 100]
             #если игрок под ящиком а нужная позиция слева
-            elif game_map[pl_pos[0] - 1][pl_pos[1]] == BOX:
+            if game_map[pl_pos[0] - 1][pl_pos[1]] == BOX:
                 return[97, 100]
             #если игрок над ящиком а нужная позиция справа от него
-            elif game_map[pl_pos[0] + 1][pl_pos[1]] == BOX:
+            if game_map[pl_pos[0] + 1][pl_pos[1]] == BOX:
                 return[100, 115]
         # если нужная позиция над ящиком а игрок справа от ящика
         if pl_pos[0] > need_pos[0] and pl_pos[1] > need_pos[1]:
@@ -333,6 +347,7 @@ class GameMap:
 
     #поиск кратчайшего расстояния в найденных путях
     def shortest_path(self, graph, start, goal):
+        """поиск кратчайшего расстояния в найденных путях"""
         way_to_box = list(self.bfs_finds(graph, start, goal))
         sorted(way_to_box, key=len)
         return way_to_box[0]
@@ -340,18 +355,19 @@ class GameMap:
     #Поиск возможных путей от точки start до goal в графе - поиск DFS
     @staticmethod
     def dfs_finds(graph, start, goal):
+        """Поиск возможных путей от точки start до goal в графе - поиск DFS"""
         stack = [(start, [start])]
         while stack:
             (vertex, path) = stack.pop()
             for next_node in set(graph[vertex]) - set(path):
                 if next_node == goal:
                     return path + [next_node]
-                else:
-                    stack.append((next_node, path + [next_node]))
+                stack.append((next_node, path + [next_node]))
 
     # Поиск возможных путей от точки start до goal в графе - поиск BFS
     @staticmethod
     def bfs_finds(graph, start, goal):
+        """Поиск возможных путей от точки start до goal в графе - поиск BFS"""
         queue = deque([(start, [start])])
         while queue:
             (vertex, path) = queue.pop()
@@ -363,6 +379,7 @@ class GameMap:
 
     #поиск решения методом BFS
     def bsf_find(self, *maps) -> bool:
+        """поиск решения методом BFS"""
         if len(maps) == 0:
             game_map = self.game_map
         else:
@@ -379,39 +396,39 @@ class GameMap:
             if copy2_map[x_pl + x_move][y_pl + y_move] == WALL or copy2_map[x_pl + x_move][y_pl + y_move] ==\
                     BOX_ON_BOX_PLACE:
                 continue
-            elif copy2_map[x_pl][y_pl] == BOX and copy2_map[x_pl + x_move][y_pl + y_move] == EMPTY and \
+            if copy2_map[x_pl][y_pl] == BOX and copy2_map[x_pl + x_move][y_pl + y_move] == EMPTY and \
                     copy2_map[x_pl + x_move + x_move][y_pl + y_move + y_move] == WALL:
                 continue
-            elif copy2_map[x_pl + x_move][y_pl + y_move] == BOX and copy2_map[x_pl + x_move * 3][y_pl + y_move * 3] == \
+            if copy2_map[x_pl + x_move][y_pl + y_move] == BOX and copy2_map[x_pl + x_move * 3][y_pl + y_move * 3] == \
                     BOX:
                 continue
-            else:
-                self.move_player(move, False, copy2_map)
-                map_hash = self.get_map_hash(copy2_map)
-                if map_hash not in hashes:
-                    if copy2_map[x_pl + x_move][y_pl + y_move] == WALL or copy2_map[x_pl + x_move][y_pl + y_move] == \
-                            BOX_ON_BOX_PLACE:
-                        continue
-                    elif copy2_map[x_pl][y_pl] == BOX and copy2_map[x_pl + x_move][y_pl + y_move] == EMPTY and \
-                            copy2_map[x_pl + x_move + x_move][y_pl + y_move + y_move] == WALL:
-                        continue
-                    elif copy2_map[x_pl + x_move][y_pl + y_move] == BOX and copy2_map[x_pl + x_move * 3][y_pl + y_move
-                                                                                                         * 3] == BOX:
-                        continue
-                    else:
-                        visited.append(move)
-                        hashes.append(map_hash)
-                        self.move_player(move, True, copy_map)
-                        if self.is_win(copy_map):
-                            self.view_find_way()
-                            return True
-                    self.bsf_find(copy_map)
+            self.move_player(move, False, copy2_map)
+            map_hash = self.get_map_hash(copy2_map)
+            if map_hash not in hashes:
+                if copy2_map[x_pl + x_move][y_pl + y_move] == WALL or copy2_map[x_pl + x_move][y_pl + y_move] == \
+                        BOX_ON_BOX_PLACE:
+                    continue
+                if copy2_map[x_pl][y_pl] == BOX and copy2_map[x_pl + x_move][y_pl + y_move] == EMPTY and \
+                        copy2_map[x_pl + x_move + x_move][y_pl + y_move + y_move] == WALL:
+                    continue
+                if copy2_map[x_pl + x_move][y_pl + y_move] == BOX and copy2_map[x_pl + x_move * 3][y_pl + y_move
+                                                                                                     * 3] == BOX:
+                    continue
+                visited.append(move)
+                hashes.append(map_hash)
+                self.move_player(move, True, copy_map)
+                if self.is_win(copy_map):
+                    self.view_find_way()
+                    return True
+            self.bsf_find(copy_map)
 
 
 class Player:
+    """Класс игрока человека"""
     #ход игрока человека
     @staticmethod
     def hod(game_map: GameMap):
+        """ход игрока человека"""
         while True:
             key = ord(getch())
             if key == 27:  # ESC
@@ -423,9 +440,11 @@ class Player:
 
 
 class AIPlayer:
+    """Класс игрока человека"""
     #ход игрока АИ
     @staticmethod
     def hod(game_map: GameMap, key_ids: list, vib: bool):
+        """ход игрока АИ"""
         #если смотрим повтор прохождения уровня игрока
         if not vib:
             for key in key_ids:
@@ -443,15 +462,18 @@ class AIPlayer:
 
 
 class Game:
+    """Класс Игры"""
     key_ids = []
     n = 0
 
     # запись ходов в список для replay уровня
     def save_hod(self, key_id: int):
+        """запись ходов в список для replay уровня"""
         self.key_ids.append(key_id)
 
     #получаем карту, и запускаем AI проходить уровень по нашим сохраненным координатам
     def ai_replay(self, *vib):
+        """получаем карту, и запускаем AI проходить уровень по нашим сохраненным координатам"""
         if len(vib) == 0:
             key = self.key_ids
             temp = False
@@ -464,15 +486,16 @@ class Game:
 
     #replay уровня
     def replay(self):
+        """replay уровня"""
         otv = self.valid_input_let('Хотите посмотреть replay? Введите "y" если да и "n" для выхода из игры. '
                                    'Введите ', 'y', 'n')
         if otv == 'n':
             exit()
-        else:
-            self.ai_replay()
+        self.ai_replay()
 
     #настройки игры
     def config(self):
+        """настройки игры"""
         print('Добро пожаловать в игру Socoban! Цель установить ящики - B, на специальные места - Х. '
               '\n Управление происходит стрелками на клавиатуре. (Выход из игры клавиша - ESC)')
         self.n = self.valid_input_dig('Выберите уровень игры: число от 1 до 5 - ')
@@ -490,28 +513,27 @@ class Game:
                 otv = self.valid_input_let('Решение найдено, желаете посмотреть? y/n ', 'y', 'n')
                 if otv == 'y':
                     self.ai_replay()
-                else:
-                    exit()
+                exit()
 
     # обработка ввода правильных буквенных ответов на диалоги
     @staticmethod
     def valid_input_let(text: str, zn1: str, zn2: str) -> str:
+        """обработка ввода правильных буквенных ответов на диалоги"""
         while True:
             enter = input(text + '"' + zn1 + '" или "' + zn2 + '": ')
             if enter.isalpha() and (enter == zn1 or enter == zn2):
                 return enter
-            else:
-                print('Введите ' + '"' + zn1 + '" или "' + zn2 + '"!')
+            print('Введите ' + '"' + zn1 + '" или "' + zn2 + '"!')
 
     #отработка корректного ввода в консоль числа(номер уровня)
     @staticmethod
     def valid_input_dig(text: str) -> int:
+        """отработка корректного ввода в консоль числа(номер уровня)"""
         while True:
             level = input(text)
             if level.isdigit() and (int(level) >= 1) and (int(level) <= 5):
                 return int(level)
-            else:
-                print('Введите номер уровня от 1 до 5!')
+            print('Введите номер уровня от 1 до 5!')
 
 if __name__ == "__main__":
     game = Game()
