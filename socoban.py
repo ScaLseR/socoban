@@ -75,22 +75,23 @@ class GameMap:
             g_map = g_map[0]
 
         x_old, y_old = self.get_coord_player_now(g_map)
-        x, y = self.convert_key_to_coord(key)
+        x_new, y_new = self.convert_key_to_coord(key)
         #если перед персонажем пустое поле или поле для ящика
-        if g_map[x_old + x][y_old + y] == EMPTY or g_map[x_old + x][y_old + y] == BOX_PLACE:
-            g_map[x_old + x][y_old + y] = PLAY
+        if g_map[x_old + x_new][y_old + y_new] == EMPTY or g_map[x_old + x_new][y_old + y_new] == BOX_PLACE:
+            g_map[x_old + x_new][y_old + y_new] = PLAY
             if [x_old, y_old] in self.pl_box:
                 g_map[x_old][y_old] = BOX_PLACE
             else:
                 g_map[x_old][y_old] = EMPTY
         # если перед персонажем ящик
-        if (g_map[x_old + x][y_old + y] == BOX or g_map[x_old + x][y_old + y] == BOX_ON_BOX_PLACE) and (
-                g_map[x_old + x + x][y_old + y + y] == EMPTY or g_map[x_old + x + x][y_old + y + y] == BOX_PLACE):
-            g_map[x_old + x][y_old + y] = PLAY
-            if g_map[x_old + x + x][y_old + y + y] == BOX_PLACE:
-                g_map[x_old + x + x][y_old + y + y] = BOX_ON_BOX_PLACE
+        if (g_map[x_old + x_new][y_old + y_new] == BOX or g_map[x_old + x_new][y_old + y_new] == BOX_ON_BOX_PLACE) and (
+                g_map[x_old + x_new + x_new][y_old + y_new + y_new] == EMPTY
+                or g_map[x_old + x_new + x_new][y_old + y_new + y_new] == BOX_PLACE):
+            g_map[x_old + x_new][y_old + y_new] = PLAY
+            if g_map[x_old + x_new + x_new][y_old + y_new + y_new] == BOX_PLACE:
+                g_map[x_old + x_new + x_new][y_old + y_new + y_new] = BOX_ON_BOX_PLACE
             else:
-                g_map[x_old + x + x][y_old + y + y] = BOX
+                g_map[x_old + x_new + x_new][y_old + y_new + y_new] = BOX
             g_map[x_old][y_old] = EMPTY
             if [x_old, y_old] in self.pl_box:
                 g_map[x_old][y_old] = BOX_PLACE
