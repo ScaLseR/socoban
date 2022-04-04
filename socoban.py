@@ -5,6 +5,7 @@ from msvcrt import getch
 from copy import deepcopy
 from collections import deque
 import time
+import sys
 
 BOX = 'B'
 BOX_ON_BOX_PLACE = '*'
@@ -77,16 +78,18 @@ class GameMap:
         x_old, y_old = self.get_coord_player_now(g_map)
         x_new, y_new = self.convert_key_to_coord(key)
         #если перед персонажем пустое поле или поле для ящика
-        if g_map[x_old + x_new][y_old + y_new] == EMPTY or g_map[x_old + x_new][y_old + y_new] == BOX_PLACE:
+        if (g_map[x_old + x_new][y_old + y_new] == EMPTY
+                or g_map[x_old + x_new][y_old + y_new] == BOX_PLACE):
             g_map[x_old + x_new][y_old + y_new] = PLAY
             if [x_old, y_old] in self.pl_box:
                 g_map[x_old][y_old] = BOX_PLACE
             else:
                 g_map[x_old][y_old] = EMPTY
         # если перед персонажем ящик
-        if (g_map[x_old + x_new][y_old + y_new] == BOX or g_map[x_old + x_new][y_old + y_new] == BOX_ON_BOX_PLACE) and (
-                g_map[x_old + x_new + x_new][y_old + y_new + y_new] == EMPTY
-                or g_map[x_old + x_new + x_new][y_old + y_new + y_new] == BOX_PLACE):
+        if ((g_map[x_old + x_new][y_old + y_new] == BOX
+            or g_map[x_old + x_new][y_old + y_new] == BOX_ON_BOX_PLACE) and
+                (g_map[x_old + x_new + x_new][y_old + y_new + y_new] == EMPTY
+                or g_map[x_old + x_new + x_new][y_old + y_new + y_new] == BOX_PLACE)):
             g_map[x_old + x_new][y_old + y_new] = PLAY
             if g_map[x_old + x_new + x_new][y_old + y_new + y_new] == BOX_PLACE:
                 g_map[x_old + x_new + x_new][y_old + y_new + y_new] = BOX_ON_BOX_PLACE
@@ -237,14 +240,16 @@ class GameMap:
         if inp == 'y':
             game.ai_replay(True)
         elif inp == 'n':
-            exit()
+            sys.exit()
 
     #решаем сокобан с помощью нахождения кратчайших путей
     def use_find(self):
-        """решаем сокобан с помощью нахождения кратчайших путей"""
+        """решаем сокобан с помощью нахождения кратчайших путей
+        между двумя вершинами графа с помощью BFS поиска"""
         graph = self.build_node_graph()
         game_map = self.game_map_copy()
         n_box = 0
+        box_coord = []
         while not self.is_win(game_map):
             way_to_boxes = []
             boxes = self.get_coord_box_now(game_map)
@@ -270,8 +275,10 @@ class GameMap:
             #передвижение ящика к месту Х
             while i < (len(way_box_to_x) - 1):
                 x_pl, y_pl = self.get_coord_player_now(game_map)
-                way_position = (way_box_to_x[i][0] - way_box_to_x[i+1][0], way_box_to_x[i][1] - way_box_to_x[i+1][1])
-                need_pl_position = (way_box_to_x[i][0] + way_position[0], way_box_to_x[i][1] + way_position[1])
+                way_position = (way_box_to_x[i][0] - way_box_to_x[i+1][0],
+                                way_box_to_x[i][1] - way_box_to_x[i+1][1])
+                need_pl_position = (way_box_to_x[i][0] + way_position[0],
+                                    way_box_to_x[i][1] + way_position[1])
                 #если игрок на неоходимой позиции, чтобы толкнуть ящик. толкаем ящик вперед
                 if need_pl_position == (x_pl, y_pl):
                     x_pl_new = way_box_to_x[i][0] - x_pl
@@ -296,26 +303,30 @@ class GameMap:
         """перевод игрока в нужную позицию для перемещения ящика(обход ящика вокруг)"""
         #если нужная позиция  @_BOX_need_pos
         if pl_pos[0] == need_pos[0] and pl_pos[1] < need_pos[1]:
-            if game_map[pl_pos[0] + 1][pl_pos[0]] == EMPTY and game_map[pl_pos[0] + 1][pl_pos[0] + 1] == EMPTY and \
-                    game_map[pl_pos[0] + 1][pl_pos[0] + 2] == EMPTY:
+            if (game_map[pl_pos[0] + 1][pl_pos[0]] == EMPTY
+                    and game_map[pl_pos[0] + 1][pl_pos[0] + 1] == EMPTY
+                    and game_map[pl_pos[0] + 1][pl_pos[0] + 2] == EMPTY):
                 return [115, 100, 100, 119]
             return [119, 100, 100, 115]
         #если нужная позиция need_pos_BOX_@
         if pl_pos[0] == need_pos[0] and pl_pos[1] > need_pos[1]:
-            if game_map[pl_pos[0] - 1][pl_pos[0]] == EMPTY and game_map[pl_pos[0] - 1][pl_pos[0] - 1] == EMPTY and \
-                    game_map[pl_pos[0] - 1][pl_pos[0] - 2] == EMPTY:
+            if (game_map[pl_pos[0] - 1][pl_pos[0]] == EMPTY
+                    and game_map[pl_pos[0] - 1][pl_pos[0] - 1] == EMPTY
+                    and game_map[pl_pos[0] - 1][pl_pos[0] - 2] == EMPTY):
                 return [115, 97, 97, 119]
             return [119, 97, 97, 115]
         #если нужная позиция над ящиком а игрок под ним
         if pl_pos[0] > need_pos[0] and pl_pos[1] == need_pos[1]:
-            if game_map[pl_pos[0]][pl_pos[0] + 1] == EMPTY and game_map[pl_pos[0] - 1][pl_pos[0] + 1] == EMPTY and \
-                    game_map[pl_pos[0] - 2][pl_pos[0] + 1] == EMPTY:
+            if (game_map[pl_pos[0]][pl_pos[0] + 1] == EMPTY
+                    and game_map[pl_pos[0] - 1][pl_pos[0] + 1] == EMPTY
+                    and game_map[pl_pos[0] - 2][pl_pos[0] + 1] == EMPTY):
                 return [100, 119, 119, 97]
             return [97, 119, 119, 100]
         #если нужная позиция под ящиком а игрок над ним
         if pl_pos[0] < need_pos[0] and pl_pos[1] == need_pos[1]:
-            if game_map[pl_pos[0]][pl_pos[0] + 1] == EMPTY and game_map[pl_pos[0] + 1][pl_pos[0] + 1] == EMPTY and \
-                    game_map[pl_pos[0] + 2][pl_pos[0] + 1] == EMPTY:
+            if (game_map[pl_pos[0]][pl_pos[0] + 1] == EMPTY
+                    and game_map[pl_pos[0] + 1][pl_pos[0] + 1] == EMPTY
+                    and game_map[pl_pos[0] + 2][pl_pos[0] + 1] == EMPTY):
                 return [100, 115, 115, 97]
             return [97, 115, 115, 100]
         #если нужная позиция над ящиком а игрок слева от ящика
@@ -339,7 +350,6 @@ class GameMap:
         if pl_pos[0] > need_pos[0] and pl_pos[1] > need_pos[1]:
             if game_map[pl_pos[0]][pl_pos[1] - 1] == BOX:
                 return [119, 97]
-
         # если нужная позиция под ящиком а игрок справа от ящика
         if pl_pos[0] < need_pos[0] and pl_pos[1] > need_pos[1]:
             if game_map[pl_pos[0]][pl_pos[1] - 1] == BOX:
@@ -395,26 +405,28 @@ class GameMap:
             copy2_map = self.game_map_copy(copy_map)
             x_move = KEY_MOVES[move][0]
             y_move = KEY_MOVES[move][1]
-            if copy2_map[x_pl + x_move][y_pl + y_move] == WALL or copy2_map[x_pl + x_move][y_pl + y_move] ==\
-                    BOX_ON_BOX_PLACE:
+            if (copy2_map[x_pl + x_move][y_pl + y_move] == WALL
+                    or copy2_map[x_pl + x_move][y_pl + y_move] == BOX_ON_BOX_PLACE):
                 continue
-            if copy2_map[x_pl][y_pl] == BOX and copy2_map[x_pl + x_move][y_pl + y_move] == EMPTY and \
-                    copy2_map[x_pl + x_move + x_move][y_pl + y_move + y_move] == WALL:
+            if (copy2_map[x_pl][y_pl] == BOX
+                    and copy2_map[x_pl + x_move][y_pl + y_move] == EMPTY
+                    and copy2_map[x_pl + x_move + x_move][y_pl + y_move + y_move] == WALL):
                 continue
-            if copy2_map[x_pl + x_move][y_pl + y_move] == BOX and copy2_map[x_pl + x_move * 3][y_pl + y_move * 3] == \
-                    BOX:
+            if (copy2_map[x_pl + x_move][y_pl + y_move] == BOX
+                    and copy2_map[x_pl + x_move * 3][y_pl + y_move * 3] == BOX):
                 continue
             self.move_player(move, False, copy2_map)
             map_hash = self.get_map_hash(copy2_map)
             if map_hash not in hashes:
-                if copy2_map[x_pl + x_move][y_pl + y_move] == WALL or copy2_map[x_pl + x_move][y_pl + y_move] == \
-                        BOX_ON_BOX_PLACE:
+                if (copy2_map[x_pl + x_move][y_pl + y_move] == WALL
+                        or copy2_map[x_pl + x_move][y_pl + y_move] == BOX_ON_BOX_PLACE):
                     continue
-                if copy2_map[x_pl][y_pl] == BOX and copy2_map[x_pl + x_move][y_pl + y_move] == EMPTY and \
-                        copy2_map[x_pl + x_move + x_move][y_pl + y_move + y_move] == WALL:
+                if (copy2_map[x_pl][y_pl] == BOX
+                        and copy2_map[x_pl + x_move][y_pl + y_move] == EMPTY
+                        and copy2_map[x_pl + x_move + x_move][y_pl + y_move + y_move] == WALL):
                     continue
-                if copy2_map[x_pl + x_move][y_pl + y_move] == BOX and copy2_map[x_pl + x_move * 3][y_pl + y_move
-                                                                                                     * 3] == BOX:
+                if (copy2_map[x_pl + x_move][y_pl + y_move] == BOX
+                        and copy2_map[x_pl + x_move * 3][y_pl + y_move * 3] == BOX):
                     continue
                 visited.append(move)
                 hashes.append(map_hash)
@@ -460,7 +472,7 @@ class AIPlayer:
                 time.sleep(0.5)
                 key = visited.pop(0)
                 game_map.move_player(key, True)
-            exit()
+            sys.exit()
 
 
 class Game:
@@ -489,19 +501,23 @@ class Game:
     #replay уровня
     def replay(self):
         """replay уровня"""
-        otv = self.valid_input_let('Хотите посмотреть replay? Введите "y" если да и "n" для выхода из игры. '
+        otv = self._valid_input_let('Хотите посмотреть replay? Введите "y" если да '
+                                   'и "n" для выхода из игры. '
                                    'Введите ', 'y', 'n')
         if otv == 'n':
-            exit()
+            sys.exit()
         self.ai_replay()
 
     #настройки игры
     def config(self):
         """настройки игры"""
-        print('Добро пожаловать в игру Socoban! Цель установить ящики - B, на специальные места - Х. '
-              '\n Управление происходит стрелками на клавиатуре. (Выход из игры клавиша - ESC)')
-        self.n_level = self.valid_input_dig('Выберите уровень игры: число от 1 до 5 - ')
-        otv = self.valid_input_let('Хотите играть сами - выберите "y", пусть играет ИИ - выберите "n". '
+        print('Добро пожаловать в игру Socoban! Цель установить ящики - B,'
+              ' на специальные места - Х. '
+              '\n Управление происходит стрелками на клавиатуре.'
+              ' (Выход из игры клавиша - ESC)')
+        self.n_level = self._valid_input_dig('Выберите уровень игры: число от 1 до 5 - ')
+        otv = self._valid_input_let('Хотите играть сами - выберите "y", пусть '
+                                   'играет ИИ - выберите "n". '
                                    'Введите ', 'y', 'n')
         game_map = GameMap(self.n_level)
         game_map.view_board()
@@ -512,14 +528,14 @@ class Game:
                 self.replay()
         else:
             if game_map.use_find():
-                otv = self.valid_input_let('Решение найдено, желаете посмотреть? y/n ', 'y', 'n')
+                otv = self._valid_input_let('Решение найдено, желаете посмотреть? y/n ', 'y', 'n')
                 if otv == 'y':
                     self.ai_replay()
-                exit()
+                sys.exit()
 
     # обработка ввода правильных буквенных ответов на диалоги
     @staticmethod
-    def valid_input_let(text: str, zn1: str, zn2: str) -> str:
+    def _valid_input_let(text: str, zn1: str, zn2: str) -> str:
         """обработка ввода правильных буквенных ответов на диалоги"""
         while True:
             enter = input(text + '"' + zn1 + '" или "' + zn2 + '": ')
@@ -529,7 +545,7 @@ class Game:
 
     #отработка корректного ввода в консоль числа(номер уровня)
     @staticmethod
-    def valid_input_dig(text: str) -> int:
+    def _valid_input_dig(text: str) -> int:
         """отработка корректного ввода в консоль числа(номер уровня)"""
         while True:
             level = input(text)
