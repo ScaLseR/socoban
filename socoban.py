@@ -20,7 +20,7 @@ visited = []
 hashes = []
 
 
-class GameMap:
+class GameMap:# pylint: disable=too-few-public-methods
     """Загрузка карты и обработка """
     def __init__(self, n_level: int):
         """Инициализация"""
@@ -153,13 +153,16 @@ class GameMap:
         moves = []
         for arrow in list(KEY_MOVES.keys()):
             x_new, y_new = self.convert_key_to_coord(arrow)
-            if copy_map[x_old + x_new][y_old + y_new] == WALL or \
-                    (copy_map[x_old + x_new][y_old + y_new] == BOX and
-                     copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == WALL) or \
-                    (copy_map[x_old + x_new][y_old + y_new] == BOX and
-                     copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == BOX) or \
-                    (copy_map[x_old + x_new][y_old + y_new] == BOX_ON_BOX_PLACE and
-                     copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == EMPTY):
+            if copy_map[x_old + x_new][y_old + y_new] == WALL:
+                continue
+            if (copy_map[x_old + x_new][y_old + y_new] == BOX
+                  and copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == WALL):
+                continue
+            if (copy_map[x_old + x_new][y_old + y_new] == BOX
+                  and copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == BOX):
+                continue
+            if (copy_map[x_old + x_new][y_old + y_new] == BOX_ON_BOX_PLACE
+                  and copy_map[x_old + x_new + x_new][y_old + y_new + y_new] == EMPTY):
                 continue
             moves.append(arrow)
         return moves
@@ -307,56 +310,56 @@ class GameMap:
                     and game_map[pl_pos[0] + 1][pl_pos[0] + 1] == EMPTY
                     and game_map[pl_pos[0] + 1][pl_pos[0] + 2] == EMPTY):
                 return [115, 100, 100, 119]
-            return [119, 100, 100, 115]
+            keys = [119, 100, 100, 115]
         #если нужная позиция need_pos_BOX_@
         if pl_pos[0] == need_pos[0] and pl_pos[1] > need_pos[1]:
             if (game_map[pl_pos[0] - 1][pl_pos[0]] == EMPTY
                     and game_map[pl_pos[0] - 1][pl_pos[0] - 1] == EMPTY
                     and game_map[pl_pos[0] - 1][pl_pos[0] - 2] == EMPTY):
                 return [115, 97, 97, 119]
-            return [119, 97, 97, 115]
+            keys = [119, 97, 97, 115]
         #если нужная позиция над ящиком а игрок под ним
         if pl_pos[0] > need_pos[0] and pl_pos[1] == need_pos[1]:
             if (game_map[pl_pos[0]][pl_pos[0] + 1] == EMPTY
                     and game_map[pl_pos[0] - 1][pl_pos[0] + 1] == EMPTY
                     and game_map[pl_pos[0] - 2][pl_pos[0] + 1] == EMPTY):
                 return [100, 119, 119, 97]
-            return [97, 119, 119, 100]
+            keys = [97, 119, 119, 100]
         #если нужная позиция под ящиком а игрок над ним
         if pl_pos[0] < need_pos[0] and pl_pos[1] == need_pos[1]:
             if (game_map[pl_pos[0]][pl_pos[0] + 1] == EMPTY
                     and game_map[pl_pos[0] + 1][pl_pos[0] + 1] == EMPTY
                     and game_map[pl_pos[0] + 2][pl_pos[0] + 1] == EMPTY):
                 return [100, 115, 115, 97]
-            return [97, 115, 115, 100]
+            keys = [97, 115, 115, 100]
         #если нужная позиция над ящиком а игрок слева от ящика
         if pl_pos[0] > need_pos[0] and pl_pos[1] < need_pos[1]:
             if game_map[pl_pos[0]][pl_pos[1] + 1] == BOX:
-                return [119, 100]
+                keys = [119, 100]
             #если игрок под ящиком а нужная позиция справа
             if game_map[pl_pos[0] - 1][pl_pos[1]] == BOX:
-                return [100, 119]
+                keys = [100, 119]
         # если нужная позиция под ящиком а игрок слева от ящика
         if pl_pos[0] < need_pos[0] and pl_pos[1] < need_pos[1]:
             if game_map[pl_pos[0]][pl_pos[1] + 1] == BOX:
-                return [115, 100]
+                keys = [115, 100]
             #если игрок под ящиком а нужная позиция слева
             if game_map[pl_pos[0] - 1][pl_pos[1]] == BOX:
-                return[97, 100]
+                keys = [97, 100]
             #если игрок над ящиком а нужная позиция справа от него
             if game_map[pl_pos[0] + 1][pl_pos[1]] == BOX:
-                return[100, 115]
+                keys = [100, 115]
         # если нужная позиция над ящиком а игрок справа от ящика
         if pl_pos[0] > need_pos[0] and pl_pos[1] > need_pos[1]:
             if game_map[pl_pos[0]][pl_pos[1] - 1] == BOX:
-                return [119, 97]
+                keys = [119, 97]
         # если нужная позиция под ящиком а игрок справа от ящика
         if pl_pos[0] < need_pos[0] and pl_pos[1] > need_pos[1]:
             if game_map[pl_pos[0]][pl_pos[1] - 1] == BOX:
-                return [115, 97]
+                keys = [115, 97]
             if game_map[pl_pos[0] + 1][pl_pos[1]] == BOX:
-                return [97, 115]
-
+                keys = [97, 115]
+        return keys
     #поиск кратчайшего расстояния в найденных путях
     def shortest_path(self, graph, start, goal):
         """поиск кратчайшего расстояния в найденных путях"""
@@ -437,7 +440,7 @@ class GameMap:
             self.bsf_find(copy_map)
 
 
-class Player:
+class Player: # pylint: disable=too-few-public-methods
     """Класс игрока человека"""
     #ход игрока человека
     @staticmethod
@@ -453,11 +456,11 @@ class Player:
                 return True
 
 
-class AIPlayer:
+class AIPlayer:# pylint: disable=too-few-public-methods
     """Класс игрока человека"""
     #ход игрока АИ
     @staticmethod
-    def hod(game_map: GameMap, key_ids: list, vib: bool):
+    def hod(game_map: GameMap, key_ids: list, vib: bool) -> bool:
         """ход игрока АИ"""
         #если смотрим повтор прохождения уровня игрока
         if not vib:
@@ -467,12 +470,11 @@ class AIPlayer:
                 if game_map.is_win():
                     return True
         #если АИ нашел решение и просматриваем его
-        else:
-            while len(visited) != 0:
-                time.sleep(0.5)
-                key = visited.pop(0)
-                game_map.move_player(key, True)
-            sys.exit()
+        while len(visited) != 0:
+            time.sleep(0.5)
+            key = visited.pop(0)
+            game_map.move_player(key, True)
+        sys.exit()
 
 
 class Game:
